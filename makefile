@@ -18,9 +18,9 @@ $(OUTPUT): $(OBJECTS)
 clean:
 	rm -f $(OUTPUT) $(OBJECTS)
 
-install:
+install: $(OUTPUT)
 	@echo "Installing mii to $(PREFIX)"
 	mkdir -p $(PREFIX)/bin
 	mkdir -p $(PREFIX)/share/mii
-	cp mii $(PREFIX)/bin
+	cp $(OUTPUT) $(PREFIX)/bin
 	cp -r init $(PREFIX)/share/mii
