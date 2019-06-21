@@ -1,7 +1,7 @@
 PREFIX ?= /usr
 CC      = gcc
-CFLAGS  = -std=c99 -Wall -Werror -pedantic -pg -O3 -D_POSIX_C_SOURCE -DMII_RELEASE -DMII_PREFIX="\"$(PREFIX)\""
-LDFLAGS = -pg
+CFLAGS  = -std=c99 -Wall -Werror -pedantic -O3 -D_POSIX_C_SOURCE -DMII_RELEASE -DMII_PREFIX="\"$(PREFIX)\""
+LDFLAGS =
 OUTPUT  = mii
 
 SOURCES = $(wildcard src/*.c) src/xxhash/xxhash.c
