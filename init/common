@@ -1,0 +1,19 @@
+#!/bin/env sh
+# mii common handler
+
+err() {
+    echo "[mii] Something went wrong. Stopping command.."
+    exit 1
+}
+
+# run mii select on the command, see if it returns OK
+mod="$($MII select "$1")"
+res=$?
+
+if [ $res = 0 ]; then
+    module load $mod
+    $@
+    exit $?
+elif [ $res = 2 ]; then
+    echo "$1: command not found!"
+fi
