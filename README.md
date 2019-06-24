@@ -41,7 +41,7 @@ To force rebuild the index, execute `mii build`.
 #### storage
 Mii originally used an SQLite3-based database to store the module index. While this worked well, performance was not optimal and the database was often corrupted.
 This implementation uses an in-house binary format to store the module tables.
-At runtime the index lives in a large hashmap using the popular (xxHash)[https://github.com/Cyan4973/xxHash] hash function.
+At runtime the index lives in a large hashmap using the high-performance [xxHash](https://github.com/Cyan4973/xxHash) non-cryptographic hash function.
 
 #### synchronizing
 Mii uses timestamp-based updating to keep the index up-to-date.
