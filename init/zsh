@@ -28,6 +28,6 @@ if [ ! -x "$MII" ]; then
 fi
 
 # execute the common handler
-command_not_found_handle() {
+command_not_found_handler() {
     $THISDIR/common $@
 }
