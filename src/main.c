@@ -265,9 +265,9 @@ int main(int argc, char** argv) {
 
 void usage(int header, char* a0) {
     if (header) {
-        fprintf(stderr, "========================================\n");
+        fprintf(stderr, "==========================================\n");
         fprintf(stderr, "==  mii %s -- module inverted index  ==\n", MII_VERSION);
-        fprintf(stderr, "========================================\n");
+        fprintf(stderr, "==========================================\n");
     }
 
     fprintf(stderr, "\n");
