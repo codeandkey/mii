@@ -1,6 +1,6 @@
 PREFIX ?= /usr
 CC      = gcc
-CFLAGS  = -std=c99 -Wall -Werror -pedantic -O3 -DMII_PREFIX="\"$(PREFIX)\""
+CFLAGS  = -std=c99 -Wall -Werror -pedantic -O3 -DMII_RELEASE -DMII_PREFIX="\"$(PREFIX)\""
 LDFLAGS =
 OUTPUT  = mii
 
