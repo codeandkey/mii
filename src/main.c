@@ -47,7 +47,7 @@ int main(int argc, char** argv) {
     int opt;
     int search_result_flags = 0;
 
-    while ((opt = getopt_long(argc, argv, "d:m:h", long_options, NULL)) != -1) {
+    while ((opt = getopt_long(argc, argv, "d:m:hj", long_options, NULL)) != -1) {
         switch (opt) {
         case 'd': /* set datadir */
             mii_option_datadir(optarg);
