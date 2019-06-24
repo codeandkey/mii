@@ -27,6 +27,9 @@ if [ ! -x "$MII" ]; then
     return
 fi
 
+# synchronize the index quickly and quietly
+mii sync 2>/dev/null &
+
 # execute the common handler
 command_not_found_handler() {
     $THISDIR/common $@
