@@ -1,3 +1,5 @@
+#define _POSIX_C_SOURC 200809L
+
 #include "modtable.h"
 #include "util.h"
 #include "log.h"

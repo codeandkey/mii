@@ -1,3 +1,5 @@
+#define _POSIX_C_SOURCE 200809L
+
 #include "mii.h"
 #include "util.h"
 #include "log.h"
