@@ -28,6 +28,7 @@ static const char* USAGE_STRING =
     "    exact <command>     Find modules which provide <command>\n"
     "    search <command>    Search for commands similar to <command>\n"
     "    show <module>       Show commands provided by <module>\n"
+    "    list                List all cached module files\n"
     "    install             Install mii into your shell\n"
     "    help                Show this message\n";
 
@@ -237,6 +238,8 @@ int main(int argc, char** argv) {
         }
 
         mii_search_result_free(&res);
+    } else if (!strcmp(argv[optind], "list")) {
+        if (mii_list()) return -1;
     } else if (!strcmp(argv[optind], "help")) {
         usage(1, *argv);
     } else if (!strcmp(argv[optind], "install")) {

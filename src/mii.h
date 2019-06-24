@@ -24,6 +24,9 @@ int mii_build();
 /* time-based cache sync, updates out-of-date modules */
 int mii_sync();
 
+/* list modules */
+int mii_list();
+
 /* search operations output a JSON result to stdout */
 int mii_search_exact(mii_search_result* res, const char* cmd);
 int mii_search_fuzzy(mii_search_result* res, const char* cmd);
