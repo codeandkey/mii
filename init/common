@@ -13,7 +13,6 @@ res=$?
 if [ $res = 0 ]; then
     module load $mod
     $@
-    exit $?
 elif [ $res = 2 ]; then
-    echo "$1: command not found!"
+    echo "$1: command not found!" 1>&2
 fi
