@@ -17,8 +17,9 @@
 static const char* USAGE_STRING =
     "USAGE: %s [FLAGS] [OPTIONS] <SUBCOMMAND>\n\n"
     "FLAGS:\n"
-    "    -j, --json    Output results in JSON encoding\n"
-    "    -h, --help    Show this message\n"
+    "    -j, --json       Output results in JSON encoding\n"
+    "    -h, --help       Show this message\n"
+    "    -v, --version    Show Mii build version\n"
     "\nOPTIONS:\n"
     "    -d, --datadir <datadir>    Use <datadir> to store index data\n"
     "    -m, --modulepath <path>    Use <path> instead of $MODULEPATH\n"
@@ -30,6 +31,7 @@ static const char* USAGE_STRING =
     "    show <module>       Show commands provided by <module>\n"
     "    list                List all cached module files\n"
     "    install             Install mii into your shell\n"
+    "    version             Show Mii build version\n"
     "    help                Show this message\n";
 
 static struct option long_options[] = {
@@ -37,17 +39,19 @@ static struct option long_options[] = {
     { "modulepath", required_argument, NULL, 'm' },
     { "help",       no_argument,       NULL, 'h' },
     { "json",       no_argument,       NULL, 'j' },
+    { "version",    no_argument,       NULL, 'v' },
     { NULL,         0,                 NULL,  0 },
 };
 
 static void usage(int header, char* a0);
 static int install();
+static void version();
 
 int main(int argc, char** argv) {
     int opt;
     int search_result_flags = 0;
 
-    while ((opt = getopt_long(argc, argv, "d:m:hj", long_options, NULL)) != -1) {
+    while ((opt = getopt_long(argc, argv, "d:m:hjv", long_options, NULL)) != -1) {
         switch (opt) {
         case 'd': /* set datadir */
             mii_option_datadir(optarg);
@@ -58,6 +62,9 @@ int main(int argc, char** argv) {
         case 'j':
             search_result_flags |= MII_SEARCH_RESULT_JSON;
             break;
+        case 'v':
+            version();
+            return 0;
         case 'h': /* display usage */
             usage(1, *argv);
             return 0;
@@ -244,6 +251,8 @@ int main(int argc, char** argv) {
         usage(1, *argv);
     } else if (!strcmp(argv[optind], "install")) {
         if (install()) return -1;
+    } else if (!strcmp(argv[optind], "version")) {
+        version();
     } else {
         mii_error("Unrecognized subcommand \"%s\"!", argv[optind]);
     }
@@ -325,4 +334,9 @@ int install() {
     }
 
     return 0;
+}
+
+void version() {
+    printf("mii build %s\n", MII_VERSION);
+    printf("Built on %s\n", MII_BUILD_TIME);
 }
