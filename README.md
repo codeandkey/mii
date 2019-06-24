@@ -6,7 +6,7 @@ Mii works around an existing *modules* installation, efficiently searching and l
 
 Once Mii is installed into a user's shell, modules will be quietly autoloaded for any unambiguous commands. Ambiguous commands will interactively ask for modules to load:
 
-```bash
+```shell
 $ blastn
 [mii] Please select a module to run blastn:
     1  ncbi-rmblastn/2.2.28-t52d4vp
@@ -21,7 +21,7 @@ Mii has no dependencies. The source is fully POSIX-compliant and will build on a
 
 ### installation
 To install Mii to your computer under `/usr`:
-```bash
+```shell
 $ cd mii-release
 # make install
 ```
