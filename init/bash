@@ -28,7 +28,7 @@ if [ ! -x "$MII" ]; then
 fi
 
 # synchronize the index quietly and quickly
-mii sync 2>/dev/null &
+(mii sync 2>/dev/null &) 
 
 # execute the common handler
 command_not_found_handle() {
