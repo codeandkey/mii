@@ -6,6 +6,14 @@ err() {
     exit 1
 }
 
+# grab status, don't do anything if not enabled
+state=$($MII status | grep "status" | cut -d' ' -f2)
+
+if [ "$state" = "disabled" ]; then
+    # show a normal command not found prompt
+    exec echo "$1: command not found!" 1>&2
+fi
+
 # run mii select on the command, see if it returns OK
 mod="$($MII select "$1")"
 res=$?

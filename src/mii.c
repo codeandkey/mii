@@ -311,3 +311,54 @@ int mii_list() {
     mii_modtable_free(&index);
     return 0;
 }
+
+int mii_enable() {
+    char* disable_path = mii_join_path(_mii_datadir, "disabled");
+
+    if (remove(disable_path)) {
+        mii_error("Couldn't enable mii, perhaps it is already enabled? (%s)", strerror(errno));
+    } else {
+        mii_info("Re-enabled shell integration!");
+    }
+
+    free(disable_path);
+
+    return 0;
+}
+
+int mii_disable() {
+    char* disable_path = mii_join_path(_mii_datadir, "disabled");
+    FILE* disable_fd = fopen(disable_path, "wb");
+
+    free(disable_path);
+
+    if (!disable_fd) {
+        mii_error("Couldn't write disable lock: %s\n", strerror(errno));
+        free(disable_path);
+        return -1;
+    }
+
+    fclose(disable_fd);
+    mii_info("Disabled shell integration!");
+
+    return 0;
+}
+
+int mii_status() {
+    char* disable_path;
+    FILE* disable_file;
+
+    disable_path = mii_join_path(_mii_datadir, "disabled");
+
+    printf("mii %s\nstatus: ", MII_VERSION);
+
+    if ((disable_file = fopen(disable_path, "r"))) {
+        fclose(disable_file);
+        printf("disabled\n");
+    } else {
+        printf("enabled\n");
+    }
+
+    free(disable_path);
+    return 0;
+}

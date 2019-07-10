@@ -31,6 +31,9 @@ static const char* USAGE_STRING =
     "    show <module>       Show commands provided by <module>\n"
     "    list                List all cached module files\n"
     "    install             Install mii into your shell\n"
+    "    enable              Enable mii integration (default)\n"
+    "    disable             Disable mii integration\n"
+    "    status              Get database and integration status\n"
     "    version             Show Mii build version\n"
     "    help                Show this message\n";
 
@@ -251,6 +254,12 @@ int main(int argc, char** argv) {
         usage(1, *argv);
     } else if (!strcmp(argv[optind], "install")) {
         if (install()) return -1;
+    } else if (!strcmp(argv[optind], "disable")) {
+        if (mii_disable()) return -1;
+    } else if (!strcmp(argv[optind], "enable")) {
+        if (mii_enable()) return -1;
+    } else if (!strcmp(argv[optind], "status")) {
+        if (mii_status()) return -1;
     } else if (!strcmp(argv[optind], "version")) {
         version();
     } else {
