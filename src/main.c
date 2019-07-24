@@ -208,7 +208,7 @@ int main(int argc, char** argv) {
 
             /* output the best 'maximum' values */
             if (res.num_results) {
-                if (res.distances[0] == 0) {
+                if (res.distances[0] == 0 || res.num_results == 1) {
                     /* user made a case mistake. recommend the right command */
                     if (select_colors) fprintf(stderr, "\033[0;39m");
                     fprintf(stderr, "[mii] Did you mean ");
