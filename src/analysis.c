@@ -17,10 +17,8 @@
 #include <wordexp.h>
 
 static const char* _mii_analysis_lmod_regex_src =
-    "^[[:space:]]*(prepend_path|append_path)"
-    "[[:space:]]*\\([[:space:]]*\"PATH\"[[:space:]]*"
-    ",[[:space:]]*\"([^\"]+)\"[[:space:]]*(,[[:space:]]*\"[^\"]*)"
-    "\"[[:space:]]*)?\\)[[:space:]]*$";
+    "\\s*(prepend_path|append_path)\\s*\\(\\s*"
+    "\"PATH\"\\s*,\\s*\"([^\"]+)\"";
 
 static regex_t _mii_analysis_lmod_regex;
 
@@ -185,6 +183,8 @@ int _mii_analysis_scan_path(char* path, char*** bins_out, int* num_bins_out) {
 
             free(abs_path);
         }
+
+        closedir(d);
     }
 
     return 0;
