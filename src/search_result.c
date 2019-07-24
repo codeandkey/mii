@@ -97,6 +97,10 @@ int mii_search_result_write(mii_search_result* p, FILE* f, int mode, int flags) 
         }
         break;
     case MII_SEARCH_RESULT_MODE_FUZZY:
+        if (p->num_results > MII_SEARCH_RESULT_FUZZY_MAX) {
+            p->num_results = MII_SEARCH_RESULT_FUZZY_MAX;
+        }
+
         if (flags & MII_SEARCH_RESULT_JSON) {
             fprintf(f, "[\n");
 
@@ -149,9 +153,9 @@ int mii_search_result_write(mii_search_result* p, FILE* f, int mode, int flags) 
                 fprintf(f, "    empty result set :(\n");
                 if (should_color) fprintf(f, "\033[0;39m");
             } else {
-                fprintf(f, "    %-*s", max_codewidth, "<MODULE>");
-                fprintf(f, "    %-*s", max_binwidth, "<COMMAND>");
-                fprintf(f, "    %s\n", "<RELEVANCE>");
+                fprintf(f, "    %-*s", max_codewidth, "MODULE");
+                fprintf(f, "    %-*s", max_binwidth, "COMMAND");
+                fprintf(f, "    %s\n", "RELEVANCE");
 
                 if (should_color) fprintf(f, "\033[0;39m");
 

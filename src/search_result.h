@@ -18,6 +18,12 @@
 #define MII_SEARCH_RESULT_MODE_FUZZY 1
 #define MII_SEARCH_RESULT_MODE_SHOW  2
 
+/*
+ * output limit when printing fuzzy searches
+ */
+
+#define MII_SEARCH_RESULT_FUZZY_MAX 16
+
 typedef struct _mii_search_result {
     int num_results, cur_result;
     char** codes, **bins, *query;
