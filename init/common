@@ -1,10 +1,5 @@
 # mii common handler
 
-err() {
-    echo "[mii] Something went wrong. Stopping command.." 1>&2
-    exit 1
-}
-
 # grab status, don't do anything if not enabled
 state=$($MII status | grep "status" | cut -d' ' -f2)
 
