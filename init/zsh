@@ -32,5 +32,5 @@ fi
 
 # execute the common handler
 command_not_found_handler() {
-    $THISDIR/common $@
+    source $THISDIR/common $@
 }
