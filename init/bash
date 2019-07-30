@@ -4,9 +4,6 @@
 # don't init in non-interactive shells
 [ -z "$PS1" ] && return
 
-# don't set the handler twice
-[ -n "$MII" ] && return
-
 # find a modules installation
 if ! type module 2>&1 >/dev/null; then
     echo "[mii] Couldn't find a 'module' command. Disabling!" 1>&2
