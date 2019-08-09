@@ -13,6 +13,7 @@ mod="$($MII select "$1")"
 res=$?
 
 if [ $res = 0 ]; then
+    echo "[mii] loading $mod ..."
     module load $mod
     $@
 elif [ $res = 2 ]; then
