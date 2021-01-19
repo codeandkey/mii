@@ -411,7 +411,9 @@ int _mii_modtable_gen_recursive_sub(mii_modtable* p, const char* root, const cha
  * if the handler returns nonzero this function is interrupted and returns immediately
  */
 int _mii_modtable_parse_from(mii_modtable* p, const char* path, int (*handler)(mii_modtable* p, char* path, char* code, char** bins, int num_bins, time_t timestamp)) {
-    int res = 0;
+    int res, num_modules;
+
+    res = 0;
     FILE* f = fopen(path, "rb");
 
     /* TODO: add error checking for unexpected EOF */
@@ -424,7 +426,9 @@ int _mii_modtable_parse_from(mii_modtable* p, const char* path, int (*handler)(m
     /* verify magic bytes */
     unsigned char magic_seq[sizeof MII_MODTABLE_MAGIC_BYTES]; /* sneaky array width copy ;) */
 
-    fread(magic_seq, sizeof magic_seq, 1, f);
+    if (fread(magic_seq, sizeof magic_seq, 1, f) != 1) {
+        goto unexpected_eof;
+    }
 
     if (memcmp(magic_seq, MII_MODTABLE_MAGIC_BYTES, sizeof magic_seq)) {
         mii_error("Couldn't parse from %s: bad magic sequence", path);
@@ -433,21 +437,32 @@ int _mii_modtable_parse_from(mii_modtable* p, const char* path, int (*handler)(m
     }
 
     /* try and bring in some modules */
-    int num_modules;
-    fread(&num_modules, sizeof num_modules, 1, f);
+    if (fread(&num_modules, sizeof num_modules, 1, f) != 1) {
+        goto unexpected_eof;
+    }
 
     for (int i = 0; i < num_modules; ++i) {
         /* read module path */
         int mod_path_size;
-        fread(&mod_path_size, sizeof mod_path_size, 1, f);
+
+        if (fread(&mod_path_size, sizeof mod_path_size, 1, f) != 1) {
+            goto unexpected_eof;
+        }
 
         char* mod_path = malloc(mod_path_size + 1);
-        fread(mod_path, 1, mod_path_size, f);
+
+        if (fread(mod_path, 1, mod_path_size, f) != mod_path_size) {
+            goto unexpected_eof;
+        }
+
         mod_path[mod_path_size] = 0;
 
         /* read module code */
         int mod_code_size;
-        fread(&mod_code_size, sizeof mod_code_size, 1, f);
+
+        if (fread(&mod_code_size, sizeof mod_code_size, 1, f) != 1) {
+            goto unexpected_eof;
+        }
 
         char* mod_code = malloc(mod_code_size + 1);
         fread(mod_code, 1, mod_code_size, f);
@@ -455,11 +470,16 @@ int _mii_modtable_parse_from(mii_modtable* p, const char* path, int (*handler)(m
 
         /* read module timestamp */
         time_t mod_timestamp;
-        fread(&mod_timestamp, sizeof mod_timestamp, 1, f);
+
+        if (fread(&mod_timestamp, sizeof mod_timestamp, 1, f) != 1) {
+            goto unexpected_eof;
+        }
 
         /* read module bins */
         int mod_num_bins;
-        fread(&mod_num_bins, sizeof mod_num_bins, 1, f);
+        if (fread(&mod_num_bins, sizeof mod_num_bins, 1, f) != 1) {
+            goto unexpected_eof;
+        }
 
         char** mod_bins = NULL;
         if (mod_num_bins) mod_bins = malloc(mod_num_bins * sizeof *mod_bins);
@@ -467,11 +487,17 @@ int _mii_modtable_parse_from(mii_modtable* p, const char* path, int (*handler)(m
         for (int j = 0; j < mod_num_bins; ++j) {
             /* grab bin size */
             int bin_size;
-            fread(&bin_size, sizeof bin_size, 1, f);
+
+            if (fread(&bin_size, sizeof bin_size, 1, f) != 1) {
+                goto unexpected_eof;
+            }
 
             /* allocate and read bin data */
             mod_bins[j] = malloc(bin_size + 1);
-            fread(mod_bins[j], 1, bin_size, f);
+
+            if (fread(mod_bins[j], 1, bin_size, f) != bin_size) {
+                goto unexpected_eof;
+            }
 
             /* null-terminate bin string */
             mod_bins[j][bin_size] = 0;
@@ -485,6 +511,11 @@ int _mii_modtable_parse_from(mii_modtable* p, const char* path, int (*handler)(m
 
     fclose(f);
     return res;
+
+    /* Catch all read errors here */
+    unexpected_eof:
+    mii_error("Couldn't parse from %s: unexpected EOF or read fail\n", path);
+    return -1;
 }
 
 int _mii_modtable_parse_handler_import(mii_modtable* p, char* path, char* code, char** bins, int num_bins, time_t timestamp) {
