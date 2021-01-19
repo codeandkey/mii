@@ -1,6 +1,6 @@
 PREFIX ?= /usr
 CC      = gcc
-CFLAGS  = -std=c99 -Wall -Werror -pedantic -O3 -DMII_RELEASE -DMII_PREFIX="\"$(PREFIX)\"" -DMII_BUILD_TIME="\"$(shell date)\""
+CFLAGS  = -std=c99 -Wall -Werror -Wno-format-security -pedantic -O3 -DMII_RELEASE -DMII_PREFIX="\"$(PREFIX)\"" -DMII_BUILD_TIME="\"$(shell date)\""
 LDFLAGS =
 OUTPUT  = mii
 
