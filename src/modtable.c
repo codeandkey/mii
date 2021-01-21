@@ -465,7 +465,11 @@ int _mii_modtable_parse_from(mii_modtable* p, const char* path, int (*handler)(m
         }
 
         char* mod_code = malloc(mod_code_size + 1);
-        fread(mod_code, 1, mod_code_size, f);
+
+        if (fread(mod_code, 1, mod_code_size, f) != mod_code_size) {
+            goto unexpected_eof;
+        }
+
         mod_code[mod_code_size] = 0;
 
         /* read module timestamp */
