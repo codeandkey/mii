@@ -180,7 +180,11 @@ int main(int argc, char** argv) {
             fprintf(stderr, "Make a selection (1-%d, q aborts) [1]: ", res.num_results);
 
             char line[4] = {0};
-            fgets(line, sizeof line, stdin);
+
+            if (!fgets(line, sizeof line, stdin)) {
+                fprintf(stderr, "[mii] No selection made!\n");
+                return 0;
+            }
 
             /* default to first option */
             if (*line == '\n') *line = '1';
