@@ -1,7 +1,7 @@
 #ifndef MII_H
 #define MII_H
 
-#define MII_VERSION "1.0.3"
+#define MII_VERSION "1.0.4"
 
 /*
  * mii interface
