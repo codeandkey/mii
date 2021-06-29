@@ -5,9 +5,14 @@
 #include "util.h"
 #include "log.h"
 
+#include <limits.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+
+#include <lua.h>
+#include <lualib.h>
+#include <lauxlib.h>
 
 #include <dirent.h>
 #include <errno.h>
@@ -15,6 +20,8 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include <wordexp.h>
+
+static lua_State *L;
 
 static const char* _mii_analysis_lmod_regex_src =
     "\\s*(prepend_path|append_path)\\s*\\(\\s*"
@@ -41,6 +48,17 @@ int mii_analysis_init() {
         return -1;
     }
 
+    L = luaL_newstate();
+    luaL_openlibs(L);
+
+    char buf[PATH_MAX];
+    char *res = realpath("./share/mii/lua/sandbox.lua", buf);
+    if (!res || luaL_dofile(L, res)) {
+        mii_error("failed to load Lua helper files");
+        lua_close(L);
+        return -1;
+    }
+
     return 0;
 }
 
@@ -49,6 +67,7 @@ int mii_analysis_init() {
  */
 void mii_analysis_free() {
     regfree(&_mii_analysis_lmod_regex);
+    lua_close(L);
 }
 
 /*
@@ -65,13 +84,18 @@ int mii_analysis_run(const char* modfile, int modtype, char*** bins_out, int* nu
     return 0;
 }
 
+const char* _mii_lua_run(lua_State* L, const char* code) {
+    lua_getglobal(L, "sandbox_run");
+    lua_pushstring(L, code);
+    lua_call(L, 1, 1);
+    return lua_tostring(L, -1);
+}
+
 /*
  * extract paths from an lmod file
  */
 int _mii_analysis_lmod(const char* path, char*** bins_out, int* num_bins_out) {
-    char linebuf[MII_ANALYSIS_LINEBUF_SIZE];
-    regmatch_t matches[3];
-
+    char* buffer;
     FILE* f = fopen(path, "r");
 
     if (!f) {
@@ -79,21 +103,28 @@ int _mii_analysis_lmod(const char* path, char*** bins_out, int* num_bins_out) {
         return -1;
     }
 
-    while (fgets(linebuf, sizeof linebuf, f)) {
-        /* strip off newline */
-        int len = strlen(linebuf);
-        if (linebuf[len - 1] == '\n') linebuf[len - 1] = 0;
+    fseek(f, 0L, SEEK_END);
+    long s = ftell(f);
+    rewind(f);
+    buffer = malloc(s + 1);
+    if ( buffer != NULL ) {
+        fread(buffer, s, 1, f);
+        fclose(f); f = NULL;
+        buffer[s] = '\0';
 
-        /* execute regex */
-        if (!regexec(&_mii_analysis_lmod_regex, linebuf, 3, matches, 0)) {
-            if (matches[2].rm_so < 0) continue;
-            linebuf[matches[2].rm_eo] = 0;
-
-            _mii_analysis_scan_path(linebuf + matches[2].rm_so, bins_out, num_bins_out);
+        /* get paths that are added to PATH */
+        char* bin_paths = mii_strdup(_mii_lua_run(L, buffer));
+        char* bin_path = strtok(bin_paths, ":");
+        while(bin_path != NULL) {
+            _mii_analysis_scan_path(bin_path, bins_out, num_bins_out);
+            bin_path = strtok(NULL, ":");
         }
-    }
 
-    fclose(f);
+        free(bin_paths);
+        free(buffer);
+    }
+    if (f != NULL) fclose(f);
+
     return 0;
 }
 
