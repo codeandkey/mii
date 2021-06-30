@@ -21,13 +21,8 @@
 #include <sys/stat.h>
 #include <wordexp.h>
 
-static lua_State *L;
-
-static const char* _mii_analysis_lmod_regex_src =
-    "\\s*(prepend_path|append_path)\\s*\\(\\s*"
-    "\"PATH\"\\s*,\\s*\"([^\"]+)\"";
-
-static regex_t _mii_analysis_lmod_regex;
+/* lua interpreter state */
+static lua_State *lua_state;
 
 /* word expansion functions */
 char* _mii_analysis_expand(const char* expr);
@@ -40,34 +35,32 @@ int _mii_analysis_tcl(const char* path, char*** bins_out, int* num_bins_out);
 int _mii_analysis_scan_path(char* path, char*** bins_out, int* num_bins_out);
 
 /*
- * compile regexes
+ * initialize lua interpreter
  */
 int mii_analysis_init() {
-    if (regcomp(&_mii_analysis_lmod_regex, _mii_analysis_lmod_regex_src, REG_EXTENDED | REG_NEWLINE)) {
-        mii_error("failed to compile Lmod analysis regex");
-        return -1;
-    }
+    lua_state = luaL_newstate();
+    luaL_openlibs(lua_state);
 
-    L = luaL_newstate();
-    luaL_openlibs(L);
-
-    char buf[PATH_MAX];
-    char *res = realpath("./share/mii/lua/sandbox.lua", buf);
-    if (!res || luaL_dofile(L, res)) {
+    /* load lua sandbox file */
+    char* lua_path = mii_join_path(MII_PREFIX, "share/mii/lua/sandbox.lua");
+    if (luaL_dofile(lua_state, lua_path)) {
         mii_error("failed to load Lua helper files");
-        lua_close(L);
+        /* cleanup */
+        free(lua_path);
+        lua_close(lua_state);
+
         return -1;
     }
 
+    free(lua_path);
     return 0;
 }
 
 /*
- * clean up regexes
+ * close lua interpreter
  */
 void mii_analysis_free() {
-    regfree(&_mii_analysis_lmod_regex);
-    lua_close(L);
+    lua_close(lua_state);
 }
 
 /*
@@ -84,11 +77,14 @@ int mii_analysis_run(const char* modfile, int modtype, char*** bins_out, int* nu
     return 0;
 }
 
-const char* _mii_lua_run(lua_State* L, const char* code) {
-    lua_getglobal(L, "sandbox_run");
-    lua_pushstring(L, code);
-    lua_call(L, 1, 1);
-    return lua_tostring(L, -1);
+/*
+ * run a modulefile's code in a lua sandbox
+ */
+const char* _mii_analysis_lua_run(lua_State* lua_state, const char* code) {
+    lua_getglobal(lua_state, "sandbox_run");
+    lua_pushstring(lua_state, code);
+    lua_call(lua_state, 1, 1);
+    return lua_tostring(lua_state, -1);
 }
 
 /*
@@ -113,7 +109,8 @@ int _mii_analysis_lmod(const char* path, char*** bins_out, int* num_bins_out) {
         buffer[s] = '\0';
 
         /* get paths that are added to PATH */
-        char* bin_paths = mii_strdup(_mii_lua_run(L, buffer));
+        char* bin_paths = mii_strdup(_mii_analysis_lua_run(lua_state, buffer));
+
         char* bin_path = strtok(bin_paths, ":");
         while(bin_path != NULL) {
             _mii_analysis_scan_path(bin_path, bins_out, num_bins_out);

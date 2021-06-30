@@ -1,8 +1,9 @@
-PREFIX ?= /usr
-CC      = gcc
-CFLAGS  = -std=c99 -Wall -Werror -Wno-format-security -pedantic -O3 -DMII_RELEASE -DMII_PREFIX="\"$(PREFIX)\"" -DMII_BUILD_TIME="\"$(shell date)\"" -D_DEFAULT_SOURCE
-LDFLAGS = -llua
-OUTPUT  = mii
+PREFIX 	  ?= /usr
+REALPREFIX = $(realpath $(PREFIX))
+CC         = gcc
+CFLAGS     = -std=c99 -Wall -Werror -Wno-format-security -pedantic -O3 -DMII_RELEASE -DMII_PREFIX="\"$(REALPREFIX)\"" -DMII_BUILD_TIME="\"$(shell date)\""
+LDFLAGS    = -llua
+OUTPUT     = mii
 
 SOURCES = $(wildcard src/*.c) src/xxhash/xxhash.c
 OBJECTS = $(SOURCES:.c=.o)
