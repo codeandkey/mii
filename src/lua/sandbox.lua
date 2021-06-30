@@ -38,7 +38,6 @@ function script_path()
 end
 
 package.path = script_path() .. '?.lua;' .. package.path
-
 require('utils')
 
 local concatTbl = table.concat
@@ -50,7 +49,7 @@ test_env = {
     os              = {getenv = os.getenv},
     assert          = assert,
     dofile          = dofile,
-    loadfile        = loadfile
+    loadfile        = loadfile,
 }
 
 local meta_function  = {}

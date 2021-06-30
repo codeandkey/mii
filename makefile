@@ -8,7 +8,11 @@ OUTPUT     = mii
 SOURCES = $(wildcard src/*.c) src/xxhash/xxhash.c
 OBJECTS = $(SOURCES:.c=.o)
 
-all: $(OUTPUT)
+LUASOURCES = $(wildcard src/lua/*.lua)
+LUAOUTPUT  = sandbox
+LUAC       = luac
+
+all: $(OUTPUT) $(LUAOUTPUT)
 
 $(OUTPUT): $(OBJECTS)
 	$(CC) $(OBJECTS) $(LDFLAGS) -o $(OUTPUT)
@@ -16,12 +20,16 @@ $(OUTPUT): $(OBJECTS)
 %.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
-clean:
-	rm -f $(OUTPUT) $(OBJECTS)
+$(LUAOUTPUT): $(LUASOURCES)
+	$(LUAC) -o $@ $?
 
-install: $(OUTPUT)
+clean:
+	rm -f $(OUTPUT) $(LUAOUTPUT) $(OBJECTS)
+
+install: $(OUTPUT) $(LUAOUTPUT)
 	@echo "Installing mii to $(PREFIX)"
 	mkdir -p $(PREFIX)/bin
-	mkdir -p $(PREFIX)/share/mii
+	mkdir -p $(PREFIX)/share/mii/lua
 	cp $(OUTPUT) $(PREFIX)/bin
-	cp -r init src/lua $(PREFIX)/share/mii
+	cp $(LUAOUTPUT) $(PREFIX)/share/mii/lua
+	cp -r init  $(PREFIX)/share/mii
