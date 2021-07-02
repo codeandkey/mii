@@ -9,7 +9,7 @@ SOURCES = $(wildcard src/*.c) src/xxhash/xxhash.c
 OBJECTS = $(SOURCES:.c=.o)
 
 LUASOURCES = $(wildcard src/lua/*.lua)
-LUAOUTPUT  = sandbox
+LUAOUTPUT  = sandbox.luac
 LUAC       = luac
 
 all: $(OUTPUT) $(LUAOUTPUT)
