@@ -42,35 +42,42 @@ require('utils')
 
 local concatTbl = table.concat
 
+local meta_table     = {}
+fake_obj             = {}
+
+function fake_func (...)
+    return fake_obj
+end
+
+function fake_compare (...)
+    return true
+end
+
+function getenv (...)
+    local val = os.getenv(...)
+    if val then return val else return "" end
+end
+
+meta_table.__index  = fake_func
+
+local meta_obj = {
+    __index     = fake_func,
+    __call      = fake_func,
+    __concat    = fake_func,
+    __add       = fake_func,
+    __eq        = fake_compare,
+    __lt        = fake_compare,
+    __le        = fake_compare,
+}
+
 test_env = {
     pathJoin        = pathJoin,
     prepend_path    = handle_path,
     append_path     = handle_path,
-    os              = {getenv = os.getenv},
-    assert          = assert,
-    dofile          = dofile,
-    loadfile        = loadfile,
+    os              = {getenv = getenv},
 }
 
-local meta_function  = {}
-local meta_table     = {}
-local fake_func      = {}
-
-meta_function.__index = function (...)
-    return function (...)
-        return nil
-    end
-end
-
-meta_function.__call = function (...)
-    return ""
-end
-
-meta_table.__index = function(...)
-    return fake_func
-end
-
-setmetatable(fake_func, meta_function)
+setmetatable(fake_obj, meta_obj)
 setmetatable(test_env, meta_table)
 
 --------------------------------------------------------------------------
