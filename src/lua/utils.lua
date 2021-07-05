@@ -204,6 +204,6 @@ end
 function handle_path(...)
    local t = convert2table(...)
    if t[1] == "PATH" then
-      A[#A+1] = t[2]
+      paths[#paths+1] = t[2]
    end
 end

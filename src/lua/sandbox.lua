@@ -79,7 +79,7 @@ setmetatable(test_env, meta_table)
 -- @param untrusted_code A string containing lua code
 
 local function run5_1(untrusted_code)
-    A = {}
+    paths = {}
     if untrusted_code:byte(1) == 27 then return nil, "binary bytecode prohibited" end
     local untrusted_function, message = loadstring(untrusted_code)
     if not untrusted_function then return nil, message end
@@ -88,7 +88,7 @@ local function run5_1(untrusted_code)
     if (not status) then
         print(msg)
     end
-    return concatTbl(A,":")
+    return paths
 end
 
 --------------------------------------------------------------------------
@@ -97,14 +97,14 @@ end
 -- of any kind. This run codes under environment [Lua 5.2] or later.
 -- @param untrusted_code A string containing lua code
 local function run5_2(untrusted_code)
-    A = {}
+    paths = {}
     local untrusted_function, message = load(untrusted_code, nil, 't', test_env)
     if not untrusted_function then return nil, message end
     status, msg = pcall(untrusted_function)
     if (not status) then
         print(msg)
     end
-    return concatTbl(A,":")
+    return paths
 end
 
 --------------------------------------------------------------------------

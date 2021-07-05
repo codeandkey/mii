@@ -5,7 +5,6 @@
 #include "util.h"
 #include "log.h"
 
-#include <limits.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -23,6 +22,9 @@
 
 /* lua interpreter state */
 static lua_State *lua_state;
+
+/* number of paths to scan for a given modulefile */
+static int num_paths;
 
 /* word expansion functions */
 char* _mii_analysis_expand(const char* expr);
@@ -80,11 +82,25 @@ int mii_analysis_run(const char* modfile, int modtype, char*** bins_out, int* nu
 /*
  * run a modulefile's code in a lua sandbox
  */
-const char* _mii_analysis_lua_run(lua_State* lua_state, const char* code) {
+char** _mii_analysis_lua_run(lua_State* lua_state, const char* code) {
+    /* execute modulefile */
     lua_getglobal(lua_state, "sandbox_run");
     lua_pushstring(lua_state, code);
     lua_call(lua_state, 1, 1);
-    return lua_tostring(lua_state, -1);
+
+    /* allocate memory for the paths */
+    luaL_checktype(lua_state, 1, LUA_TTABLE);
+    num_paths = lua_objlen(lua_state, -1);
+    char** paths = malloc(sizeof (char*) * num_paths);
+
+    /* retrieve paths from lua stack */
+    for (int i = 1; i <= num_paths; ++i) {
+        lua_rawgeti(lua_state, -i, i);
+        paths[i-1] = mii_strdup(lua_tostring(lua_state, -1));
+    }
+    lua_pop(lua_state, 1);
+
+    return paths;
 }
 
 /*
@@ -108,13 +124,11 @@ int _mii_analysis_lmod(const char* path, char*** bins_out, int* num_bins_out) {
         fclose(f); f = NULL;
         buffer[s] = '\0';
 
-        /* get paths that are added to PATH */
-        char* bin_paths = mii_strdup(_mii_analysis_lua_run(lua_state, buffer));
-
-        char* bin_path = strtok(bin_paths, ":");
-        while(bin_path != NULL) {
-            _mii_analysis_scan_path(bin_path, bins_out, num_bins_out);
-            bin_path = strtok(NULL, ":");
+        /* get paths and analyze */
+        char** bin_paths = _mii_analysis_lua_run(lua_state, buffer);
+        for(int i = 0; i < num_paths; ++i) {
+            _mii_analysis_scan_path(bin_paths[i], bins_out, num_bins_out);
+            free(bin_paths[i]);
         }
 
         free(bin_paths);
