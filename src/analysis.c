@@ -46,7 +46,7 @@ int mii_analysis_init() {
     /* load lua sandbox file */
     char* lua_path = mii_join_path(MII_PREFIX, "share/mii/lua/sandbox.luac");
     if (luaL_dofile(lua_state, lua_path)) {
-        mii_error("failed to load Lua helper files");
+        mii_error("failed to load Lua file, tried %s", lua_path);
         /* cleanup */
         free(lua_path);
         lua_close(lua_state);
