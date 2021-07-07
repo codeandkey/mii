@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <limits.h>
 
 #include <lua.h>
 #include <lualib.h>
@@ -43,19 +44,28 @@ int mii_analysis_init() {
     lua_state = luaL_newstate();
     luaL_openlibs(lua_state);
 
-    /* load lua sandbox file */
+    /* sandbox path when mii is installed */
     char* lua_path = mii_join_path(MII_PREFIX, "share/mii/lua/sandbox.luac");
-    if (luaL_dofile(lua_state, lua_path)) {
-        mii_error("failed to load Lua file, tried %s", lua_path);
-        /* cleanup */
-        free(lua_path);
-        lua_close(lua_state);
 
-        return -1;
+    if(access(lua_path, F_OK) == 0) {
+        /* found file, execute it and return */
+        luaL_dofile(lua_state, lua_path);
+        free(lua_path);
+        return 0;
+    }
+    free(lua_path);
+
+    lua_path = "./sandbox.luac";
+    if(access(lua_path, F_OK) == 0) {
+        /* mii is not installed, but should work anyway */
+        luaL_dofile(lua_state, lua_path);
+        return 0;
     }
 
-    free(lua_path);
-    return 0;
+    mii_error("failed to load Lua file");
+    lua_close(lua_state);
+
+    return -1;
 }
 
 /*
