@@ -9,9 +9,11 @@
 #include <stdio.h>
 #include <string.h>
 
+#if MII_ENABLE_LUA
 #include <lua.h>
 #include <lualib.h>
 #include <lauxlib.h>
+#endif
 
 #include <dirent.h>
 #include <errno.h>
@@ -20,11 +22,19 @@
 #include <sys/stat.h>
 #include <wordexp.h>
 
+#if !MII_ENABLE_LUA
+static const char* _mii_analysis_lmod_regex_src =
+    "\\s*(prepend_path|append_path)\\s*\\(\\s*"
+    "\"PATH\"\\s*,\\s*\"([^\"]+)\"";
+
+static regex_t _mii_analysis_lmod_regex;
+#else
 /* lua interpreter state */
 static lua_State *lua_state;
 
 /* number of paths to scan for a given modulefile */
 static int num_paths;
+#endif
 
 /* word expansion functions */
 char* _mii_analysis_expand(const char* expr);
@@ -36,6 +46,19 @@ int _mii_analysis_tcl(const char* path, char*** bins_out, int* num_bins_out);
 /* path scanning functions */
 int _mii_analysis_scan_path(char* path, char*** bins_out, int* num_bins_out);
 
+#if !MII_ENABLE_LUA
+/*
+ * initialize regexes
+ */
+int mii_analysis_init() {
+    if (regcomp(&_mii_analysis_lmod_regex, _mii_analysis_lmod_regex_src, REG_EXTENDED | REG_NEWLINE)) {
+        mii_error("failed to compile Lmod analysis regex");
+        return -1;
+    }
+
+    return 0;
+}
+#else
 /*
  * initialize lua interpreter
  */
@@ -66,12 +89,17 @@ int mii_analysis_init() {
 
     return -1;
 }
+#endif
 
 /*
  * close lua interpreter
  */
 void mii_analysis_free() {
+#if !MII_ENABLE_LUA
+    regfree(&_mii_analysis_lmod_regex);
+#else
     lua_close(lua_state);
+#endif
 }
 
 /*
@@ -88,6 +116,7 @@ int mii_analysis_run(const char* modfile, int modtype, char*** bins_out, int* nu
     return 0;
 }
 
+#if MII_ENABLE_LUA
 /*
  * run a modulefile's code in a lua sandbox
  */
@@ -111,12 +140,12 @@ char** _mii_analysis_lua_run(lua_State* lua_state, const char* code) {
 
     return paths;
 }
+#endif
 
 /*
  * extract paths from an lmod file
  */
 int _mii_analysis_lmod(const char* path, char*** bins_out, int* num_bins_out) {
-    char* buffer;
     FILE* f = fopen(path, "r");
 
     if (!f) {
@@ -124,6 +153,27 @@ int _mii_analysis_lmod(const char* path, char*** bins_out, int* num_bins_out) {
         return -1;
     }
 
+#if !MII_ENABLE_LUA
+    char linebuf[MII_ANALYSIS_LINEBUF_SIZE];
+    regmatch_t matches[3];
+
+    while (fgets(linebuf, sizeof linebuf, f)) {
+        /* strip off newline */
+        int len = strlen(linebuf);
+        if (linebuf[len - 1] == '\n') linebuf[len - 1] = 0;
+
+        /* execute regex */
+        if (!regexec(&_mii_analysis_lmod_regex, linebuf, 3, matches, 0)) {
+            if (matches[2].rm_so < 0) continue;
+            linebuf[matches[2].rm_eo] = 0;
+
+            _mii_analysis_scan_path(linebuf + matches[2].rm_so, bins_out, num_bins_out);
+        }
+    }
+
+    fclose(f);
+#else
+    char* buffer;
     fseek(f, 0L, SEEK_END);
     long s = ftell(f);
     rewind(f);
@@ -144,6 +194,7 @@ int _mii_analysis_lmod(const char* path, char*** bins_out, int* num_bins_out) {
         free(buffer);
     }
     if (f != NULL) fclose(f);
+#endif
 
     return 0;
 }
