@@ -34,6 +34,9 @@ static lua_State *lua_state;
 
 /* number of paths to scan for a given modulefile */
 static int num_paths;
+
+/* run lua module code in a sandbox */
+char** _mii_analysis_lua_run(lua_State* lua_state, const char* code);
 #endif
 
 /* word expansion functions */
