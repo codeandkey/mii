@@ -48,7 +48,7 @@ int _mii_analysis_scan_path(char* path, char*** bins_out, int* num_bins_out);
 
 #if !MII_ENABLE_LUA
 /*
- * initialize regexes
+ * compile regexes
  */
 int mii_analysis_init() {
     if (regcomp(&_mii_analysis_lmod_regex, _mii_analysis_lmod_regex_src, REG_EXTENDED | REG_NEWLINE)) {
@@ -92,7 +92,7 @@ int mii_analysis_init() {
 #endif
 
 /*
- * close lua interpreter
+ * cleanup regexes or lua interpreter
  */
 void mii_analysis_free() {
 #if !MII_ENABLE_LUA
