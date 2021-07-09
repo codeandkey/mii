@@ -3,45 +3,45 @@ REALPREFIX = $(realpath $(PREFIX))
 CC         = gcc
 CFLAGS     = -std=c99 -Wall -Werror -Wno-format-security -pedantic -O3 -DMII_RELEASE -DMII_PREFIX="\"$(REALPREFIX)\"" -DMII_BUILD_TIME="\"$(shell date)\""
 LDFLAGS    =
-OUTPUT     = mii
+C_OUTPUT   = mii
+OUTPUTS    = $(C_OUTPUT)
 
 MII_ENABLE_LUA ?= no
 
-SOURCES = $(wildcard src/*.c) src/xxhash/xxhash.c
-OBJECTS = $(SOURCES:.c=.o)
+C_SOURCES = $(wildcard src/*.c) src/xxhash/xxhash.c
+C_OBJECTS = $(C_SOURCES:.c=.o)
 
-LUASOURCES = $(wildcard src/lua/*.lua)
-LUAOUTPUT  = sandbox.luac
-LUAC       = luac
+LUA_SOURCES = $(wildcard src/lua/*.lua)
+LUA_OUTPUT  = sandbox.luac
+LUAC        = luac
 
 ifeq ($(MII_ENABLE_LUA), yes)
 CFLAGS  += -DMII_ENABLE_LUA
 LDFLAGS += -llua
-
-all: $(OUTPUT) $(LUAOUTPUT)
-else
-all: $(OUTPUT)
+OUTPUTS += $(LUA_OUTPUT)
 endif
 
-$(OUTPUT): $(OBJECTS)
-	$(CC) $(OBJECTS) $(LDFLAGS) -o $(OUTPUT)
+all: $(OUTPUTS)
+
+$(C_OUTPUT): $(C_OBJECTS)
+	$(CC) $(C_OBJECTS) $(LDFLAGS) -o $(C_OUTPUT)
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
-$(LUAOUTPUT): $(LUASOURCES)
+$(LUA_OUTPUT): $(LUA_SOURCES)
 	$(LUAC) -o $@ $?
 
 clean:
-	rm -f $(OUTPUT) $(LUAOUTPUT) $(OBJECTS)
+	rm -f $(C_OUTPUT) $(LUA_OUTPUT) $(C_OBJECTS)
 
-install: $(OUTPUT) $(LUAOUTPUT)
+install: $(OUTPUTS)
 	@echo "Installing mii to $(PREFIX)"
 	mkdir -p $(PREFIX)/bin
 	mkdir -p $(PREFIX)/share/mii
-	cp $(OUTPUT) $(PREFIX)/bin
+	cp $(C_OUTPUT) $(PREFIX)/bin
 	cp -r init  $(PREFIX)/share/mii
-ifeq ($(MII_ENABLE_MII), yes)
+ifeq ($(MII_ENABLE_LUA), yes)
 	mkdir -p $(PREFIX)/share/mii/lua
-	cp $(LUAOUTPUT) $(PREFIX)/share/mii/lua
+	cp $(LUA_OUTPUT) $(PREFIX)/share/mii/lua
 endif
