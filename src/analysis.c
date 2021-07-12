@@ -1,5 +1,13 @@
 #define _POSIX_C_SOURCE 200809L
 
+/* After Lua 5.1, lua_objlen changed name and LUA_OK is defined */
+#if LUA_VERSION_NUM <= 501
+#define mii_lua_len lua_objlen
+#define LUA_OK 0
+#else
+#define mii_lua_len lua_rawlen
+#endif
+
 #include "analysis.h"
 #include "modtable.h"
 #include "util.h"
@@ -73,18 +81,19 @@ int mii_analysis_init() {
     char* lua_path = mii_join_path(MII_PREFIX, "share/mii/lua/sandbox.luac");
 
     if(access(lua_path, F_OK) == 0) {
-        /* found file, execute it and return */
-        luaL_dofile(lua_state, lua_path);
-        free(lua_path);
-        return 0;
+        /* found file, try to execute it and return */
+        if(luaL_dofile(lua_state, lua_path) == LUA_OK) {
+            free(lua_path);
+            return 0;
+        }
     }
     free(lua_path);
 
     lua_path = "./sandbox.luac";
     if(access(lua_path, F_OK) == 0) {
         /* mii is not installed, but should work anyway */
-        luaL_dofile(lua_state, lua_path);
-        return 0;
+        if(luaL_dofile(lua_state, lua_path) == LUA_OK)
+            return 0;
     }
 
     mii_error("failed to load Lua file");
@@ -131,7 +140,7 @@ char** _mii_analysis_lua_run(lua_State* lua_state, const char* code) {
 
     /* allocate memory for the paths */
     luaL_checktype(lua_state, 1, LUA_TTABLE);
-    num_paths = lua_objlen(lua_state, -1);
+    num_paths = mii_lua_len(lua_state, -1);
     char** paths = malloc(sizeof (char*) * num_paths);
 
     /* retrieve paths from lua stack */

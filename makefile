@@ -6,8 +6,6 @@ LDFLAGS    =
 C_OUTPUT   = mii
 OUTPUTS    = $(C_OUTPUT)
 
-MII_ENABLE_LUA ?= no
-
 C_SOURCES = $(wildcard src/*.c) src/xxhash/xxhash.c
 C_OBJECTS = $(C_SOURCES:.c=.o)
 
@@ -15,9 +13,13 @@ LUA_SOURCES = src/lua/utils.lua src/lua/sandbox.lua
 LUA_OUTPUT  = sandbox.luac
 LUAC        = luac
 
+MII_ENABLE_LUA  ?= no
+MII_LUA_LDFLAG  ?= -llua
+MII_LUA_INCLUDE ?=
+
 ifeq ($(MII_ENABLE_LUA), yes)
-CFLAGS  += -DMII_ENABLE_LUA
-LDFLAGS += -llua
+CFLAGS  += -DMII_ENABLE_LUA $(MII_LUA_INCLUDE)
+LDFLAGS += $(MII_LUA_LDFLAG)
 OUTPUTS += $(LUA_OUTPUT)
 endif
 
