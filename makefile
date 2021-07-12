@@ -11,7 +11,7 @@ MII_ENABLE_LUA ?= no
 C_SOURCES = $(wildcard src/*.c) src/xxhash/xxhash.c
 C_OBJECTS = $(C_SOURCES:.c=.o)
 
-LUA_SOURCES = $(wildcard src/lua/*.lua)
+LUA_SOURCES = src/lua/utils.lua src/lua/sandbox.lua
 LUA_OUTPUT  = sandbox.luac
 LUAC        = luac
 
