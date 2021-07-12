@@ -1,13 +1,5 @@
 #define _POSIX_C_SOURCE 200809L
 
-/* After Lua 5.1, lua_objlen changed name and LUA_OK is defined */
-#if LUA_VERSION_NUM <= 501
-#define mii_lua_len lua_objlen
-#define LUA_OK 0
-#else
-#define mii_lua_len lua_rawlen
-#endif
-
 #include "analysis.h"
 #include "modtable.h"
 #include "util.h"
@@ -21,7 +13,16 @@
 #include <lua.h>
 #include <lualib.h>
 #include <lauxlib.h>
+
+/* After Lua 5.1, lua_objlen changed name and LUA_OK is defined */
+#if LUA_VERSION_NUM <= 501
+#define mii_lua_len lua_objlen
+#define LUA_OK 0
+#else
+#define mii_lua_len lua_rawlen
 #endif
+
+#endif // MII_ENABLE_LUA
 
 #include <dirent.h>
 #include <errno.h>
