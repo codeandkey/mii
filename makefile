@@ -32,7 +32,7 @@ $(C_OUTPUT): $(C_OBJECTS)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 $(LUA_OUTPUT): $(LUA_SOURCES)
-	$(LUAC) -o $@ $?
+	$(LUAC) -o $@ $^
 
 clean:
 	rm -f $(C_OUTPUT) $(LUA_OUTPUT) $(C_OBJECTS)
