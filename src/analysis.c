@@ -41,9 +41,6 @@ static regex_t _mii_analysis_lmod_regex;
 /* Lua interpreter state */
 static lua_State *lua_state;
 
-/* number of paths to scan for a given modulefile */
-static int num_paths;
-
 /* run lua module code in a sandbox */
 int _mii_analysis_lua_run(lua_State* lua_state, const char* code, char*** paths_out, int* num_paths_out);
 #endif
@@ -208,6 +205,7 @@ int _mii_analysis_lmod(const char* path, char*** bins_out, int* num_bins_out) {
 
         /* get binaries paths */
         char** bin_paths;
+        int num_paths;
         if(_mii_analysis_lua_run(lua_state, buffer, &bin_paths, &num_paths)) {
             mii_error("Error occured when executing %s, skipping", path);
             return -1;
