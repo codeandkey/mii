@@ -67,6 +67,8 @@ test_env = {
     prepend_path    = handle_path,
     append_path     = handle_path,
     os              = {getenv = getenv},
+    assert          = assert,
+    error           = error,
 }
 
 setmetatable(fake_obj, meta_obj)
@@ -80,14 +82,11 @@ setmetatable(test_env, meta_table)
 
 local function run5_1(untrusted_code)
     paths = {}
-    if untrusted_code:byte(1) == 27 then return nil, "binary bytecode prohibited" end
+    if untrusted_code:byte(1) == 27 then error("binary bytecode prohibited") end
     local untrusted_function, message = loadstring(untrusted_code)
-    if not untrusted_function then return nil, message end
+    if not untrusted_function then error(message) end
     setfenv(untrusted_function, test_env)
-    status, msg = pcall(untrusted_function)
-    if (not status) then
-        print(msg)
-    end
+    untrusted_function()
     return paths
 end
 
@@ -99,11 +98,8 @@ end
 local function run5_2(untrusted_code)
     paths = {}
     local untrusted_function, message = load(untrusted_code, nil, 't', test_env)
-    if not untrusted_function then return nil, message end
-    status, msg = pcall(untrusted_function)
-    if (not status) then
-        print(msg)
-    end
+    if not untrusted_function then error(message) end
+    untrusted_function()
     return paths
 end
 
