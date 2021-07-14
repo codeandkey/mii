@@ -208,6 +208,7 @@ int _mii_analysis_lmod(const char* path, char*** bins_out, int* num_bins_out) {
         int num_paths;
         if(_mii_analysis_lua_run(lua_state, buffer, &bin_paths, &num_paths)) {
             mii_error("Error occured when executing %s, skipping", path);
+            free(buffer);
             return -1;
         }
 
