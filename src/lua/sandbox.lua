@@ -50,8 +50,22 @@ function getenv (...)
     if val then return val else return "" end
 end
 
+-- The bare minimum to check for PATH modifications in modulefiles
+test_env = {
+    pathJoin        = pathJoin,
+    prepend_path    = handle_path,
+    append_path     = handle_path,
+    os              = {getenv = getenv},
+    assert          = assert,
+    error           = error,
+    ipairs          = ipairs,
+    pairs           = pairs,
+}
+
 meta_table.__index  = fake_func
 
+-- These functions may get called if the modulefile tries to use a
+-- function which isn't defined in the test env
 local meta_obj = {
     __index     = fake_func,
     __call      = fake_func,
@@ -62,49 +76,59 @@ local meta_obj = {
     __le        = fake_compare,
 }
 
-test_env = {
-    pathJoin        = pathJoin,
-    prepend_path    = handle_path,
-    append_path     = handle_path,
-    os              = {getenv = getenv},
-    assert          = assert,
-    error           = error,
-}
-
 setmetatable(fake_obj, meta_obj)
 setmetatable(test_env, meta_table)
 
 --------------------------------------------------------------------------
--- This function is what actually "loads" a modulefile with protection
--- against modulefiles call functions they shouldn't or syntax errors
--- of any kind.
+-- Load the provided code in a sandbox environment and return it as a
+-- function. This function works with Lua 5.1.
 -- @param untrusted_code A string containing lua code
-
-local function run5_1(untrusted_code)
-    paths = {}
+local function loadcode5_1(untrusted_code)
     if untrusted_code:byte(1) == 27 then error("binary bytecode prohibited") end
     local untrusted_function, message = loadstring(untrusted_code)
     if not untrusted_function then error(message) end
     setfenv(untrusted_function, test_env)
-    untrusted_function()
-    return paths
+    return untrusted_function
 end
 
 --------------------------------------------------------------------------
--- This function is what actually "loads" a modulefile with protection
--- against modulefiles call functions they shouldn't or syntax errors
--- of any kind. This run codes under environment [Lua 5.2] or later.
+-- Load the provided code in a sandbox environment and return it as a
+-- function. This function works with Lua 5.2 or higher.
 -- @param untrusted_code A string containing lua code
-local function run5_2(untrusted_code)
-    paths = {}
+local function loadcode5_2(untrusted_code)
     local untrusted_function, message = load(untrusted_code, nil, 't', test_env)
     if not untrusted_function then error(message) end
-    untrusted_function()
-    return paths
+    return untrusted_function
+end
+
+loadcode = (_VERSION == "Lua 5.1") and loadcode5_1 or loadcode5_2
+
+--------------------------------------------------------------------------
+-- Read an entire file and load it's code as a function in a sandbox env.
+-- @param filename The name/path of the file to load
+function loadfile(filename)
+    local file = assert(io.open(filename, "r"))
+    local code = file:read("*a")
+    file:close()
+    return loadcode(code)
 end
 
 --------------------------------------------------------------------------
--- Define two version: Lua 5.1 or 5.2.  It is likely that
--- The 5.2 version will be good for many new versions of
--- Lua but time will only tell.
-sandbox_run = (_VERSION == "Lua 5.1") and run5_1 or run5_2
+-- Execute a lua file in a sandbox environment.
+-- @param filename The name/path of the file to load
+function dofile(filename)
+    return assert(loadfile(filename))()
+end
+
+-- add the functions to the sandbox env
+test_env.loadfile = loadfile
+test_env.dofile   = dofile
+
+--------------------------------------------------------------------------
+-- Load the provided code in a sandbox environment and execute it
+-- @param untrusted_code A string containing lua code
+function sandbox_run(untrusted_code)
+    paths = {}
+    loadcode(untrusted_code)()
+    return paths
+end
