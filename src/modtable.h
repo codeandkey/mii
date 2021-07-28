@@ -21,10 +21,13 @@
 #define MII_MODTABLE_MODTYPE_LMOD 0
 #define MII_MODTABLE_MODTYPE_TCL 1
 
+#define MII_MODTABLE_SPIDER_CMD "$LMOD_DIR/spider -o spider-json"
+#define MII_MODTABLE_BUF_SIZE 4096
+
 typedef struct _mii_modtable_entry {
     char* path, *code;
-    int type, num_bins;
-    char** bins;
+    int type, num_bins, num_parents;
+    char** bins, **parents;
     time_t timestamp;
     int analysis_complete; /* truthy if the bin list is confirmed to be complete */
     struct _mii_modtable_entry* next;
@@ -41,6 +44,10 @@ void mii_modtable_free(mii_modtable* p);
 
 int mii_modtable_gen(mii_modtable* p, char* modulepath); /* scan for modules and build a partial table */
 int mii_modtable_import(mii_modtable* p, const char* path); /* import an existing table from the disk */
+
+#if MII_ENABLE_SPIDER
+int mii_modtable_spider_gen(mii_modtable* p, const char* path, int* count);
+#endif
 
 int mii_modtable_preanalysis(mii_modtable* p, const char* path); /* preanalyze up-to-date modules */
 int mii_modtable_analysis(mii_modtable* p, int* count); /* perform analysis on all required modules */

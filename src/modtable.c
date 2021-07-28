@@ -7,6 +7,11 @@
 
 #include "xxhash/xxhash.h"
 
+#if MII_ENABLE_SPIDER
+#include "cjson/cJSON.h"
+#include <unistd.h>
+#endif
+
 #include <dirent.h>
 #include <errno.h>
 
@@ -20,13 +25,13 @@
 /* should never really need to change. identify the mii_modtable file format */
 static const unsigned char MII_MODTABLE_MAGIC_BYTES[] = { 0xBE, 0xE5 };
 
-int _mii_modtable_parse_from(mii_modtable* p, const char* path, int (*handler)(mii_modtable* p, char* path, char* code, char** bins, int num_bins, time_t timestamp));
+int _mii_modtable_parse_from(mii_modtable* p, const char* path, int (*handler)(mii_modtable* p, char* path, char* code, char** bins, int num_bins, char** parents, int num_parents, time_t timestamp));
 int _mii_modtable_get_target_index(const char* path);
 mii_modtable_entry* _mii_modtable_locate_entry(mii_modtable* p, const char* path);
 
 /* parse handlers */
-int _mii_modtable_parse_handler_import(mii_modtable* p, char* path, char* code, char** bins, int num_bins, time_t timestamp);
-int _mii_modtable_parse_handler_preanalysis(mii_modtable* p, char* path, char* code, char** bins, int num_bins, time_t timestamp);
+int _mii_modtable_parse_handler_import(mii_modtable* p, char* path, char* code, char** bins, int num_bins, char** parents, int num_parents, time_t timestamp);
+int _mii_modtable_parse_handler_preanalysis(mii_modtable* p, char* path, char* code, char** bins, int num_bins, char** parents, int num_parents, time_t timestamp);
 
 /* mii_modtable generation */
 int _mii_modtable_gen_recursive(mii_modtable* p, const char* root);
@@ -57,7 +62,12 @@ void mii_modtable_free(mii_modtable* p) {
                 free(cur->bins[j]);
             }
 
+            for (int j = 0; j < cur->num_parents; ++j) {
+                free(cur->parents[j]);
+            }
+
             free(cur->bins);
+            if (cur->num_parents > 0) free(cur->parents);
             tmp = cur->next;
 
             free(cur);
@@ -143,6 +153,7 @@ int mii_modtable_analysis(mii_modtable* p, int* num) {
                 if (!mii_analysis_run(cur->path, cur->type, &cur->bins, &cur->num_bins)) {
                     mii_debug("analysis for %s : %d bins", cur->path, cur->num_bins);
 
+                    cur->num_parents = 0;
                     cur->analysis_complete = 1;
                     ++count;
                 }
@@ -213,6 +224,16 @@ int mii_modtable_export(mii_modtable* p, const char* path) {
                 fwrite(cur->bins[j], 1, bin_len, f);
             }
 
+            /* write number of parents */
+            fwrite(&cur->num_parents, sizeof cur->num_parents, 1, f);
+
+            /* write parent codes size and data (if any) */
+            for (int j = 0; j < cur->num_parents; ++j) {
+                int parent_len = strlen(cur->parents[j]);
+                fwrite(&parent_len, sizeof parent_len, 1, f);
+                fwrite(cur->parents[j], 1, parent_len, f);
+            }
+
             cur = cur->next;
         }
     }
@@ -239,13 +260,23 @@ int mii_modtable_search_exact(mii_modtable* p, const char* cmd, mii_search_resul
         while (cur) {
             for (int j = 0; j < cur->num_bins; ++j) {
                 if (!strcmp(cur->bins[j], cmd)) {
-                    mii_search_result_add(res, cur->code, cmd, 0);
+                    /* show different parents as different results */
+                    for (int k = 0; k < cur->num_parents; ++k) {
+                        mii_search_result_add(res, cur->code, cmd, 0, cur->parents[k]);
+                    }
+
+                    /* if no parents, send null */
+                    if (cur->num_parents == 0) {
+                        mii_search_result_add(res, cur->code, cmd, 0, NULL);
+                    }
                 }
             }
 
             cur = cur->next;
         }
     }
+
+    mii_search_result_sort(res);
 
     return 0;
 }
@@ -269,7 +300,15 @@ int mii_modtable_search_similar(mii_modtable* p, const char* cmd, mii_search_res
                 int dist = mii_levenshtein_distance(cmd, cur->bins[j]); 
 
                 if (dist < MII_MODTABLE_DISTANCE_THRESHOLD) {
-                    mii_search_result_add(res, cur->code, cur->bins[j], dist);
+                    /* show different parents as different results */
+                    for (int k = 0; k < cur->num_parents; ++k) {
+                        mii_search_result_add(res, cur->code, cur->bins[j], dist, cur->parents[k]);
+                    }
+
+                    /* if no parents, send null */
+                    if (cur->num_parents == 0) {
+                        mii_search_result_add(res, cur->code, cur->bins[j], dist, NULL);
+                    }
                 }
             }
 
@@ -297,7 +336,8 @@ int mii_modtable_search_info(mii_modtable* p, const char* code, mii_search_resul
         while (cur) {
             if (!strcmp(cur->code, code)) {
                 for (int j = 0; j < cur->num_bins; ++j) {
-                    mii_search_result_add(res, cur->code, cur->bins[j], 0);
+                    /* parent modules are not important here */
+                    mii_search_result_add(res, cur->code, cur->bins[j], 0, NULL);
                 }
 
                 break;
@@ -410,7 +450,7 @@ int _mii_modtable_gen_recursive_sub(mii_modtable* p, const char* root, const cha
  * <handler> is called for each imported module with allocated module info
  * if the handler returns nonzero this function is interrupted and returns immediately
  */
-int _mii_modtable_parse_from(mii_modtable* p, const char* path, int (*handler)(mii_modtable* p, char* path, char* code, char** bins, int num_bins, time_t timestamp)) {
+int _mii_modtable_parse_from(mii_modtable* p, const char* path, int (*handler)(mii_modtable* p, char* path, char* code, char** bins, int num_bins, char** parents, int num_parents, time_t timestamp)) {
     int res, num_modules;
 
     res = 0;
@@ -507,8 +547,36 @@ int _mii_modtable_parse_from(mii_modtable* p, const char* path, int (*handler)(m
             mod_bins[j][bin_size] = 0;
         }
 
+        /* read module parent */
+        int mod_num_parents;
+        if (fread(&mod_num_parents, sizeof mod_num_parents, 1, f) != 1) {
+            goto unexpected_eof;
+        }
+
+        char** mod_parents = NULL;
+        if (mod_num_parents) mod_parents = malloc(mod_num_parents * sizeof *mod_parents);
+
+        for (int j = 0; j < mod_num_parents; ++j) {
+            /* grab parent size */
+            int parent_size;
+
+            if (fread(&parent_size, sizeof parent_size, 1, f) != 1) {
+                goto unexpected_eof;
+            }
+
+            /* allocate and read parent data */
+            mod_parents[j] = malloc(parent_size + 1);
+
+            if (fread(mod_parents[j], 1, parent_size, f) != parent_size) {
+                goto unexpected_eof;
+            }
+
+            /* null-terminate parent string */
+            mod_parents[j][parent_size] = 0;
+        }
+
         /* that's all we need! call the handler */
-        if ((res = handler(p, mod_path, mod_code, mod_bins, mod_num_bins, mod_timestamp))) {
+        if ((res = handler(p, mod_path, mod_code, mod_bins, mod_num_bins, mod_parents, mod_num_parents, mod_timestamp))) {
             break;
         }
     }
@@ -522,7 +590,7 @@ int _mii_modtable_parse_from(mii_modtable* p, const char* path, int (*handler)(m
     return -1;
 }
 
-int _mii_modtable_parse_handler_import(mii_modtable* p, char* path, char* code, char** bins, int num_bins, time_t timestamp) {
+int _mii_modtable_parse_handler_import(mii_modtable* p, char* path, char* code, char** bins, int num_bins, char** parents, int num_parents, time_t timestamp) {
     /* import: just insert every module into the modtable and don't worry too much */
     int target_index = _mii_modtable_get_target_index(path);
 
@@ -532,6 +600,8 @@ int _mii_modtable_parse_handler_import(mii_modtable* p, char* path, char* code, 
     new_entry->code = code;
     new_entry->bins = bins;
     new_entry->num_bins = num_bins;
+    new_entry->parents = parents;
+    new_entry->num_parents = num_parents;
     new_entry->timestamp = timestamp;
     new_entry->next = p->buf[target_index];
     new_entry->analysis_complete = 1;
@@ -543,7 +613,7 @@ int _mii_modtable_parse_handler_import(mii_modtable* p, char* path, char* code, 
     return 0;
 }
 
-int _mii_modtable_parse_handler_preanalysis(mii_modtable* p, char* path, char* code, char** bins, int num_bins, time_t timestamp) {
+int _mii_modtable_parse_handler_preanalysis(mii_modtable* p, char* path, char* code, char** bins, int num_bins, char** parents, int num_parents, time_t timestamp) {
     /* preanalysis phase
      * locate any matching modules and check if they are up to date.
      * if so, then prefill the binary list.
@@ -557,6 +627,8 @@ int _mii_modtable_parse_handler_preanalysis(mii_modtable* p, char* path, char* c
 
         mod->bins = bins;
         mod->num_bins = num_bins;
+        mod->parents = parents;
+        mod->num_parents = num_parents;
         mod->analysis_complete = 1;
 
         --p->modules_requiring_analysis;
@@ -594,3 +666,88 @@ mii_modtable_entry* _mii_modtable_locate_entry(mii_modtable* p, const char* path
 
     return NULL;
 }
+
+#if MII_ENABLE_SPIDER
+
+/* generate the index using the spider command provided by Lmod */
+int mii_modtable_spider_gen(mii_modtable* p, const char* path, int* count) {
+    /* prepare and run spider cmd */
+    char* cmd = malloc(strlen(path) + strlen(MII_MODTABLE_SPIDER_CMD) + 2);
+    sprintf(cmd, "%s %s", MII_MODTABLE_SPIDER_CMD, path);
+    FILE* pf = popen(cmd, "r");
+
+    if (pf == NULL) {
+        mii_error("Couldn't execute %s: %s", cmd, strerror(errno));
+        free(cmd);
+        return -1;
+    }
+
+    free(cmd);
+
+    char buf[MII_MODTABLE_BUF_SIZE];
+    char* unparsed_json = NULL;
+    size_t json_len = 0;
+
+    /* read buffered cmd output */
+    for (size_t len = 0; (len = fread(buf, 1, sizeof(buf), pf)) > 0; json_len += len) {
+        unparsed_json = (char*) realloc(unparsed_json, json_len + len);
+
+        if (unparsed_json == NULL) {
+            mii_error("Couldn't allocate memory for JSON: %s", strerror(errno));
+            pclose(pf);
+            return -1;
+        }
+
+        memcpy(unparsed_json + json_len, buf, len);
+    }
+    pclose(pf);
+
+    /* replace newline by end of str */
+    unparsed_json[--json_len] = '\0';
+
+    if (unparsed_json == NULL) {
+        mii_error("The returned JSON was empty.");
+        free(unparsed_json);
+        return -1;
+    }
+
+    /* parse the json */
+    cJSON* json = cJSON_Parse(unparsed_json);
+    free(unparsed_json);
+
+    if (json == NULL) {
+        mii_error("Couldn't parse JSON : %s", cJSON_GetErrorPtr());
+        return -1;
+    }
+
+    /* iterate over every modulefile found by the spider */
+    for (cJSON* module = json->child; module != NULL; module = module->next) {
+        for (cJSON* modulefile = module->child; modulefile != NULL; modulefile = modulefile->next) {
+            /* allocate memory and get info */
+            mii_modtable_entry* new_module = malloc(sizeof *new_module);
+
+            if(mii_analysis_parse_module_json(modulefile, new_module)) {
+                mii_error("Couldn't parse JSON for module %s", modulefile->string);
+                free(new_module);
+                return -1;
+            }
+
+            mii_debug("analysis for %s : %d bins", new_module->path, new_module->num_bins);
+
+            /* add to the modtable */
+            int target_index = _mii_modtable_get_target_index(new_module->path);
+            new_module->next = p->buf[target_index];
+            p->buf[target_index] = new_module;
+
+            /* increment the counter */
+            ++p->num_modules;
+        }
+    }
+    cJSON_Delete(json);
+
+    *count = p->num_modules;
+
+    return 0;
+}
+
+#endif
