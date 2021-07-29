@@ -361,7 +361,16 @@ int _mii_search_result_compare_codes(const char* code1, const char* code2) {
     char* token2 = strtok_r(NULL, ".", &p2);
 
     while(diff == 0 && token1 != NULL && token2 != NULL) {
-        diff = strtol(token1, NULL, 10) - strtol(token2, NULL, 10);
+        char* endptr1, *endptr2;
+
+        diff = strtol(token1, &endptr1, 10) - strtol(token2, &endptr2, 10);
+
+        /* one of the tokens is not a number */
+        if (token1 == endptr1 || token2 == endptr2) {
+            /* flipped to fit with the strtol return */
+            diff = - strcmp(token1, token2);
+        }
+
         token1 = strtok_r(NULL, ".", &p1);
         token2 = strtok_r(NULL, ".", &p2);
     }
