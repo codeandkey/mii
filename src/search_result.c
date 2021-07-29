@@ -244,20 +244,25 @@ int mii_search_result_write(mii_search_result* p, FILE* f, int mode, int flags) 
 }
 
 void mii_search_result_sort(mii_search_result* res) {
-    /* optimized bubble sort */
-    /* makes it easier to compare based on multiple factors */
+    /* order results based on multiple factors */
+    /* a simple selection sort will do fine */
+
+    int min_index;
 
     /* no results to sort */
     if (!res->num_results) return;
 
-    for (int i = 0, changed = 1; i < res->num_results - 1 && changed; ++i) {
-        changed = 0;
+    for (int i = 0; i < res->num_results - 1; ++i) {
+        min_index = i;
 
-        for (int j = 0; j < res->num_results - i - 1; ++j) {
-            if (_mii_search_result_compare(res, j, j + 1) > 0) {
-                _mii_search_result_swap(res, j, j + 1);
-                changed = 1;
+        for (int j = i + 1; j < res->num_results; ++j) {
+            if (_mii_search_result_compare(res, j, min_index) < 0) {
+                min_index = j;
             }
+        }
+
+        if (min_index != i) {
+            _mii_search_result_swap(res, i, min_index);
         }
     }
 }
