@@ -25,7 +25,10 @@ void mii_search_result_free(mii_search_result* dest) {
     for (int i = 0; i < dest->num_results; ++i) {
         free(dest->codes[i]);
         free(dest->bins[i]);
+        free(dest->parents[i]);
     }
+
+    free(dest->query);
 
     /* drop result arrays */
     free(dest->codes);
@@ -121,15 +124,16 @@ int mii_search_result_write(mii_search_result* p, FILE* f, int mode, int flags) 
             }
         }
         break;
-    case MII_SEARCH_RESULT_MODE_FUZZY:
-        if (p->num_results > MII_SEARCH_RESULT_FUZZY_MAX) {
-            p->num_results = MII_SEARCH_RESULT_FUZZY_MAX;
+    case MII_SEARCH_RESULT_MODE_FUZZY: ;
+        int num_results = p->num_results;
+        if (num_results > MII_SEARCH_RESULT_FUZZY_MAX) {
+            num_results = MII_SEARCH_RESULT_FUZZY_MAX;
         }
 
         if (flags & MII_SEARCH_RESULT_JSON) {
             fprintf(f, "[\n");
 
-            for (int i = 0; i < p->num_results; ++i) {
+            for (int i = 0; i < num_results; ++i) {
                 fprintf(f, "    { \"code\": \"%s\", \"command\": \"%s\", \"parents\": \"%s\", \"distance\": %d },\n", p->codes[i], p->bins[i], p->parents[i], p->distances[i]);
             }
 
@@ -144,7 +148,7 @@ int mii_search_result_write(mii_search_result* p, FILE* f, int mode, int flags) 
             if (should_color) fprintf(f, "\033[1;37m");
             fprintf(f, ":");
 
-            if (p->num_results) fprintf(f, " (total %d)", p->num_results);
+            if (num_results) fprintf(f, " (total %d)", num_results);
             fprintf(f, "\n");
 
             /* formatting strings/colors for relevance values */
@@ -165,7 +169,7 @@ int mii_search_result_write(mii_search_result* p, FILE* f, int mode, int flags) 
             /* compute the maximum code + bin width */
             int max_codewidth = 8, max_binwidth = 9, max_parentwidth = 11;
 
-            for (int k = 0; k < p->num_results; ++k) {
+            for (int k = 0; k < num_results; ++k) {
                 int clen = strlen(p->codes[k]), blen = strlen(p->bins[k]), plen = strlen(p->parents[k]);
 
                 if (clen > max_codewidth) max_codewidth = clen;
@@ -174,7 +178,7 @@ int mii_search_result_write(mii_search_result* p, FILE* f, int mode, int flags) 
             }
 
             /* render everything in pretty columns and colors */
-            if (!p->num_results) {
+            if (!num_results) {
                 if (should_color) fprintf(f, "\033[2;37m");
                 fprintf(f, "    empty result set :(\n");
                 if (should_color) fprintf(f, "\033[0;39m");
@@ -186,7 +190,7 @@ int mii_search_result_write(mii_search_result* p, FILE* f, int mode, int flags) 
 
                 if (should_color) fprintf(f, "\033[0;39m");
 
-                for (int k = 0; k < p->num_results; ++k) {
+                for (int k = 0; k < num_results; ++k) {
                     fprintf(f, "    %-*s", max_codewidth, p->codes[k]);
 
                     if (should_color) fprintf(f, "\033[0;36m");
@@ -342,7 +346,7 @@ int _mii_search_result_compare_codes(const char* code1, const char* code2) {
     diff = strcmp(code1_cpy, code2_cpy);
 
     /* order found or only compare alphas, cleanup before returning */
-    if (diff != 0 && !is_versioned) {
+    if (diff != 0 || !is_versioned) {
         free(code1_cpy);
         free(code2_cpy);
     }
