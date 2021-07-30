@@ -21,7 +21,7 @@
 #define MII_MODTABLE_MODTYPE_LMOD 0
 #define MII_MODTABLE_MODTYPE_TCL 1
 
-#define MII_MODTABLE_SPIDER_CMD "$LMOD_DIR/spider -o spider-json"
+#define MII_MODTABLE_SPIDER_CMD ""
 #define MII_MODTABLE_BUF_SIZE 4096
 
 typedef struct _mii_modtable_entry {
