@@ -13,10 +13,8 @@ mods=($($MII select "$1"))
 res=$?
 
 if [ $res = 0 ]; then
-    echo "[mii] loading $mods ..." 1>&2
-    for mod in $mods; do
-        module load $mod
-    done
+    echo "[mii] loading ${mods[@]} ..." 1>&2
+    module load ${mods[@]}
     $@
 elif [ $res = 2 ]; then
     echo "$1: command not found!" 1>&2
