@@ -671,9 +671,15 @@ mii_modtable_entry* _mii_modtable_locate_entry(mii_modtable* p, const char* path
 
 /* generate the index using the spider command provided by Lmod */
 int mii_modtable_spider_gen(mii_modtable* p, const char* path, int* count) {
-    /* prepare and run spider cmd */
-    char* cmd = malloc(strlen(path) + strlen(MII_MODTABLE_SPIDER_CMD) + 2);
-    sprintf(cmd, "%s %s", MII_MODTABLE_SPIDER_CMD, path);
+    char* lmod_dir = getenv("LMOD_DIR");
+    if (lmod_dir == NULL || strlen(lmod_dir) == 0) {
+        mii_error("Couldn't find Lmod's directory. Please set LMOD_DIR.");
+        return -1;
+    }
+
+    /* generate the spider command and run it */
+    char* cmd = malloc(strlen(lmod_dir)+ strlen(path) + 23);
+    sprintf(cmd, "%s/%s %s", lmod_dir, "spider -o spider-json", path);
     FILE* pf = popen(cmd, "r");
 
     if (pf == NULL) {
