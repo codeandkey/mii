@@ -39,7 +39,24 @@ int mii_init() {
         }
     }
 
-    if (!_mii_datadir) {
+    /* -d option has priority */
+    if (!_mii_datadir)
+    {
+        char *index_file = getenv("MII_INDEX_FILE");
+
+        /* can't read file if file exists */
+        if (index_file && (access(index_file, R_OK) != 0 && errno != ENOENT))
+        {
+            mii_error("%s exists and is not readable!", index_file);
+            return -1;
+        }
+
+        /* env var is set and file is OK */
+        if (index_file)
+        {
+            _mii_datafile = mii_strdup(index_file);
+        }
+
         char* home = getenv("HOME");
 
         if (!home) {
@@ -57,7 +74,10 @@ int mii_init() {
         return -1;
     }
 
-    _mii_datafile = mii_join_path(_mii_datadir, "index");
+    if (!_mii_datafile) 
+    {
+        _mii_datafile = mii_join_path(_mii_datadir, "index");
+    }
 
     mii_debug("Initialized mii with cache path %s", _mii_datafile);
     return 0;
