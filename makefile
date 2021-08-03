@@ -1,5 +1,10 @@
 PREFIX 	  ?= /usr
 REALPREFIX = $(realpath $(PREFIX))
+
+ifndef $(REALPREFIX)
+REALPREFIX = $(PREFIX)
+endif
+
 CC         = gcc
 CFLAGS     = -std=c99 -Wall -Werror -Wno-format-security -pedantic -O3 -DMII_RELEASE -DMII_PREFIX="\"$(REALPREFIX)\"" -DMII_BUILD_TIME="\"$(shell date)\""
 LDFLAGS    =
