@@ -678,7 +678,7 @@ int mii_modtable_spider_gen(mii_modtable* p, const char* path, int* count) {
     }
 
     /* generate the spider command and run it */
-    char* cmd = malloc(strlen(lmod_dir)+ strlen(path) + 23);
+    char* cmd = malloc(strlen(lmod_dir)+ strlen(path) + 24);
     sprintf(cmd, "%s/%s %s", lmod_dir, "spider -o spider-json", path);
     FILE* pf = popen(cmd, "r");
 
