@@ -34,7 +34,7 @@ char* mii_join_path(const char* a, const char* b) {
 
 int mii_levenshtein_distance(const char* a, const char* b) {
     /*
-     * quickly compute the levenshtein distance between
+     * quickly compute the damerau-levenshtein distance between
      * string <a> and <b> using a full matrix
      */
 
@@ -57,6 +57,11 @@ int mii_levenshtein_distance(const char* a, const char* b) {
             int substitution = mat[(i - 1) * (b_len + 1) + j - 1] + (tolower(a[i - 1]) != tolower(b[j - 1]));
 
             mat[i * (b_len + 1) + j] = mii_min(deletion, mii_min(insertion, substitution));
+
+            /* transposition with optimal string alignment distance */
+            if (i > 1 && j > 1 && tolower(a[i - 1]) == tolower(b[j - 2]) && tolower(a[i - 2]) == tolower(b[j - 1])) {
+                mat[i * (b_len + 1) + j] = mii_min(mat[i * (b_len + 1) + j], mat[(i - 2) * (b_len + 1) + j - 2] + 1);
+            }
         }
     }
 
