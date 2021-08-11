@@ -8,6 +8,12 @@
 
 #include <ctype.h>
 
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <errno.h>
+#include <libgen.h>
+
 char* mii_strdup(const char* str) {
     int len = strlen(str);
     char* out = malloc(len + 1);
@@ -67,4 +73,32 @@ int mii_levenshtein_distance(const char* a, const char* b) {
     free(mat);
 
     return result;
+}
+
+int mii_recursive_mkdir(const char *path, mode_t mode) {
+    int res;
+    struct stat st;
+
+    res = stat(path, &st);
+
+    /* file exists and is a directory, nothing to do */
+    if (!res && S_ISDIR(st.st_mode)) {
+        return 0;
+    }
+
+    /* file exists but isn't a directory */
+    if (!res) {
+        errno = ENOTDIR;
+        return -1;
+    }
+
+    /* create parent directory */
+    char *dir = strdup(path);
+    res = mii_recursive_mkdir(dirname(dir), mode);
+
+    free(dir);
+
+    if (res) return res;
+
+    return mkdir(path, mode);
 }

@@ -8,6 +8,7 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
+#include <libgen.h>
 
 #include <sys/stat.h>
 #include <unistd.h>
@@ -54,6 +55,20 @@ int mii_init() {
         /* env var is set and file is OK */
         if (index_file)
         {
+            char* index_file_cpy = mii_strdup(index_file);
+            char* mii_index_dir = dirname(index_file_cpy);
+
+            /* create parent dir */
+            int res = mii_recursive_mkdir(mii_index_dir, 0755);
+
+            free(index_file_cpy);
+
+            /* couldn't create index dir */
+            if (res) {
+                mii_error("Error initializing index directory: %s", strerror(errno));
+                return -1;
+            }
+
             _mii_datafile = mii_strdup(index_file);
         }
 
