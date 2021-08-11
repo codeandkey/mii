@@ -45,14 +45,6 @@ int mii_init() {
     {
         char *index_file = getenv("MII_INDEX_FILE");
 
-        /* can't read file if file exists */
-        if (index_file && (access(index_file, R_OK) != 0 && errno != ENOENT))
-        {
-            mii_error("%s exists and is not readable!", index_file);
-            return -1;
-        }
-
-        /* env var is set and file is OK */
         if (index_file)
         {
             char* index_file_cpy = mii_strdup(index_file);
