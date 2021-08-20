@@ -46,7 +46,7 @@ int mii_modtable_gen(mii_modtable* p, char* modulepath); /* scan for modules and
 int mii_modtable_import(mii_modtable* p, const char* path); /* import an existing table from the disk */
 
 #if MII_ENABLE_SPIDER
-int mii_modtable_spider_gen(mii_modtable* p, const char* path, int* count);
+int mii_modtable_spider_gen(mii_modtable* p, const char* path, int* count, const char* skip_paths, const char* skip_modules);
 #endif
 
 int mii_modtable_preanalysis(mii_modtable* p, const char* path); /* preanalyze up-to-date modules */

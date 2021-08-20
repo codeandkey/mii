@@ -14,6 +14,8 @@
 
 void mii_option_modulepath(const char* modulepath);
 void mii_option_datadir(const char* datadir);
+void mii_option_ignore_paths(const char* paths);
+void mii_option_ignore_modules(const char* modules);
 
 int mii_init();
 void mii_free();

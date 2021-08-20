@@ -670,7 +670,7 @@ mii_modtable_entry* _mii_modtable_locate_entry(mii_modtable* p, const char* path
 #if MII_ENABLE_SPIDER
 
 /* generate the index using the spider command provided by Lmod */
-int mii_modtable_spider_gen(mii_modtable* p, const char* path, int* count) {
+int mii_modtable_spider_gen(mii_modtable* p, const char* path, int* count, const char* skip_paths, const char* skip_modules) {
     char* lmod_dir = getenv("LMOD_DIR");
     if (lmod_dir == NULL || strlen(lmod_dir) == 0) {
         mii_error("Couldn't find Lmod's directory. Please set LMOD_DIR.");
@@ -726,16 +726,22 @@ int mii_modtable_spider_gen(mii_modtable* p, const char* path, int* count) {
         return -1;
     }
 
+    mii_analysis_filters_init(skip_paths, skip_modules);
+
     /* iterate over every modulefile found by the spider */
     for (cJSON* module = json->child; module != NULL; module = module->next) {
         for (cJSON* modulefile = module->child; modulefile != NULL; modulefile = modulefile->next) {
             /* allocate memory and get info */
-            mii_modtable_entry* new_module = malloc(sizeof *new_module);
+            mii_modtable_entry* new_module = NULL;
 
-            if(mii_analysis_parse_module_json(modulefile, new_module)) {
+            if(mii_analysis_parse_module_json(modulefile, &new_module)) {
                 mii_error("Couldn't parse JSON for module %s", modulefile->string);
-                free(new_module);
                 return -1;
+            }
+
+            /* module was filtered out */
+            if (!new_module) {
+                continue;
             }
 
             mii_debug("analysis for %s : %d bins", new_module->path, new_module->num_bins);
@@ -750,10 +756,13 @@ int mii_modtable_spider_gen(mii_modtable* p, const char* path, int* count) {
         }
     }
     cJSON_Delete(json);
+    mii_analysis_filters_free();
 
     *count = p->num_modules;
 
     return 0;
 }
+
+
 
 #endif
