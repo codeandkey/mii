@@ -2,7 +2,7 @@
 # should be sourced from a zsh shell
 
 # don't init in non-interactive shells
-[[ $- == *i* ]] && return
+[[ ! $- == *i* ]] && return
 
 # find a modules installation
 if ! type module 2>&1 >/dev/null; then
