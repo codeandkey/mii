@@ -2,7 +2,7 @@
 # should be sourced from a bash shell
 
 # don't init in non-interactive shells
-[ $- != *i* ] && return
+[[ $- != *i* ]] && return
 
 # find a modules installation
 if ! type module 2>&1 >/dev/null; then
@@ -27,7 +27,11 @@ fi
 # synchronize the index quietly and quickly
 (mii sync 2>/dev/null &) 
 
-# execute the common handler
 command_not_found_handle() {
-    source $THISDIR/common $@
+    # pass the command through mii if we are still interactive
+    if [[ $- == *i* ]]; then
+        source $THISDIR/common $@
+    else
+        $@
+    fi
 }

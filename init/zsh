@@ -27,7 +27,11 @@ fi
 # synchronize the index quickly and quietly
 (mii sync 2>/dev/null &)
 
-# execute the common handler
 command_not_found_handler() {
-    source $THISDIR/common $@
+    # pass the command through mii if we are still interactive
+    if [[ -o interactive ]]; then
+        source $THISDIR/common $@
+    else
+        $@
+    fi
 }
