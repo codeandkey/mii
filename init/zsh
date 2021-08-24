@@ -24,8 +24,10 @@ if [ ! -x "$MII" ]; then
     return
 fi
 
-# synchronize the index quickly and quietly
-(mii sync 2>/dev/null &)
+# synchronize the index quickly and quietly if no global index
+if [ ! -x "$MII_INDEX_FILE" ]; then
+    (mii sync 2>/dev/null &)
+fi
 
 # execute the common handler
 command_not_found_handler() {
