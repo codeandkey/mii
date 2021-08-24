@@ -1,7 +1,7 @@
 # mii common handler
 
 # return if it is interactive
-if [[ $- == *i* ]]; then
+if [[ ! $- == *i* ]]; then
     # show a normal command not found prompt
     exec echo "$1: command not found!" 1>&2
 fi
