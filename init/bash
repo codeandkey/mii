@@ -2,7 +2,7 @@
 # should be sourced from a bash shell
 
 # don't init in non-interactive shells
-[ -z "$PS1" ] && return
+[ $- != *i* ] && return
 
 # find a modules installation
 if ! type module 2>&1 >/dev/null; then
