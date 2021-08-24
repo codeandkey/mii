@@ -30,8 +30,10 @@ fi
 command_not_found_handler() {
     # pass the command through mii if we are still interactive
     if [[ -o interactive ]]; then
-        source $THISDIR/common $@
+        mii_common_force_disable=0
     else
-        $@
+        mii_common_force_disable=1
     fi
+
+    source $THISDIR/common $@
 }

@@ -1,5 +1,10 @@
 # mii common handler
 
+# avoid calling mii, output an error message if we are non-interactive
+if [ $mii_common_force_disable ]; then
+    exec echo "$1: command not found!" 1>&2
+fi
+
 # grab status, don't do anything if not enabled
 state=$($MII status | grep "status" | cut -d' ' -f2)
 
