@@ -1,8 +1,7 @@
 # mii common handler
 
-# return if it is interactive
-if [[ ! $- == *i* ]]; then
-    # show a normal command not found prompt
+# return if not interactive or sourced
+if [[ $- != *i* ]] || [[ "$SOURCED" = "1" ]]; then
     exec echo "$1: command not found!" 1>&2
 fi
 

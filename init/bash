@@ -31,5 +31,8 @@ fi
 
 # execute the common handler
 command_not_found_handle() {
+    # check if being sourced
+    [[ -n "${BASH_SOURCE[1]}" ]] && SOURCED=1 || SOURCED=0
+
     source $THISDIR/common $@
 }
