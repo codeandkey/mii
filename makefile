@@ -22,10 +22,19 @@ MII_ENABLE_LUA  ?= no
 MII_LUA_LDFLAG  ?= -llua
 MII_LUA_INCLUDE ?=
 
+MII_ENABLE_SPIDER ?= no
+C_JSON_SOURCES     = src/cjson/cJSON.c
+C_JSON_OBJECTS     = $(C_JSON_SOURCES:.c=.o)
+
 ifeq ($(MII_ENABLE_LUA), yes)
 CFLAGS  += -DMII_ENABLE_LUA $(MII_LUA_INCLUDE)
 LDFLAGS += $(MII_LUA_LDFLAG)
 OUTPUTS += $(LUA_OUTPUT)
+endif
+
+ifeq ($(MII_ENABLE_SPIDER), yes)
+CFLAGS 	  += -DMII_ENABLE_SPIDER
+C_SOURCES += $(C_JSON_SOURCES)
 endif
 
 all: $(OUTPUTS)
@@ -40,7 +49,7 @@ $(LUA_OUTPUT): $(LUA_SOURCES)
 	$(LUAC) -o $@ $^
 
 clean:
-	rm -f $(C_OUTPUT) $(LUA_OUTPUT) $(C_OBJECTS)
+	rm -f $(C_OUTPUT) $(LUA_OUTPUT) $(C_OBJECTS) $(C_JSON_OBJECTS)
 
 install: $(OUTPUTS)
 	@echo "Installing mii to $(PREFIX)"
