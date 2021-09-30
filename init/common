@@ -1,5 +1,10 @@
 # mii common handler
 
+# return if not interactive or sourced
+if [[ $- != *i* ]] || [[ "$SOURCED" = "1" ]]; then
+    exec echo "$1: command not found!" 1>&2
+fi
+
 # grab status, don't do anything if not enabled
 state=$($MII status | grep "status" | cut -d' ' -f2)
 

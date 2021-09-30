@@ -8,6 +8,7 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
+#include <libgen.h>
 
 #include <sys/stat.h>
 #include <unistd.h>
@@ -49,7 +50,30 @@ int mii_init() {
         }
     }
 
-    if (!_mii_datadir) {
+    /* -d option has priority */
+    if (!_mii_datadir)
+    {
+        char *index_file = getenv("MII_INDEX_FILE");
+
+        if (index_file)
+        {
+            char* index_file_cpy = mii_strdup(index_file);
+            char* mii_index_dir = dirname(index_file_cpy);
+
+            /* create parent dir */
+            int res = mii_recursive_mkdir(mii_index_dir, 0755);
+
+            free(index_file_cpy);
+
+            /* couldn't create index dir */
+            if (res) {
+                mii_error("Error initializing index directory: %s", strerror(errno));
+                return -1;
+            }
+
+            _mii_datafile = mii_strdup(index_file);
+        }
+
         char* home = getenv("HOME");
 
         if (!home) {
@@ -67,7 +91,10 @@ int mii_init() {
         return -1;
     }
 
-    _mii_datafile = mii_join_path(_mii_datadir, "index");
+    if (!_mii_datafile) 
+    {
+        _mii_datafile = mii_join_path(_mii_datadir, "index");
+    }
 
     mii_debug("Initialized mii with cache path %s", _mii_datafile);
     return 0;
