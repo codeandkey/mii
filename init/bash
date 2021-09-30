@@ -29,5 +29,5 @@ fi
 
 # execute the common handler
 command_not_found_handle() {
-    source $THISDIR/common $@
+    source $THISDIR/common "$@"
 }
