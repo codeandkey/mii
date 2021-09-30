@@ -1,5 +1,10 @@
 # mii common handler
 
+# return if not interactive or sourced
+if [[ $- != *i* ]] || [[ "$SOURCED" = "1" ]]; then
+    exec echo "$1: command not found!" 1>&2
+fi
+
 # grab status, don't do anything if not enabled
 state=$($MII status | grep "status" | cut -d' ' -f2)
 
@@ -9,12 +14,12 @@ if [ "$state" = "disabled" ]; then
 fi
 
 # run mii select on the command, see if it returns OK
-mod="$($MII select "$1")"
+mods=($($MII select "$1"))
 res=$?
 
 if [ $res = 0 ]; then
-    echo "[mii] loading $mod ..." 1>&2
-    module load $mod
+    echo "[mii] loading ${mods[@]} ..." 1>&2
+    module load ${mods[@]}
     $@
 elif [ $res = 2 ]; then
     echo "$1: command not found!" 1>&2
