@@ -159,7 +159,7 @@ int main(int argc, char** argv) {
 
         /* if there is one result, output it and stop */
         if (res.num_results == 1) {
-            printf("%s\n", res.codes[0]);
+            printf("%s %s\n", res.parents[0], res.codes[0]);
         } else if (res.num_results > 1) {
             /* prompt the user for a module */
             fprintf(stderr, "[mii] ");
@@ -170,11 +170,27 @@ int main(int argc, char** argv) {
             if (select_colors) fprintf(stderr, "\033[1;37m");
             fprintf(stderr, ":\n");
 
+            /* compute the maximum code width */
+            int max_codewidth = 8;
+
+            for (int k = 0; k < res.num_results; ++k) {
+                int clen = strlen(res.codes[k]);
+                if (clen > max_codewidth) max_codewidth = clen;
+            }
+
+            if (select_colors) fprintf(stderr, "\033[1;37m");
+            fprintf(stderr, "       %-*s", max_codewidth, "MODULE");
+            fprintf(stderr, " %s\n", "PARENT(S)");
+            if (select_colors) fprintf(stderr, "\033[0;39m");
+
             for (int i = 0; i < res.num_results; ++i) {
                 if (select_colors) fprintf(stderr, "\033[2;39m");
                 fprintf(stderr, "    %-2d", i + 1);
                 if (select_colors) fprintf(stderr, "\033[0;39m");
-                fprintf(stderr, " %s\n", res.codes[i]);
+                fprintf(stderr, " %-*s", max_codewidth, res.codes[i]);
+                if (select_colors) fprintf(stderr, "\033[0;36m");
+                fprintf(stderr, " %s\n", res.parents[i]);
+                if (select_colors) fprintf(stderr, "\033[0;39m");
             }
 
             fprintf(stderr, "Make a selection (1-%d, q aborts) [1]: ", res.num_results);
@@ -204,7 +220,7 @@ int main(int argc, char** argv) {
             }
 
             /* finally output the chosen module */
-            printf("%s\n", res.codes[val]);
+            printf("%s %s\n", res.parents[val], res.codes[val]);
         } else {
             /* no results. we need to perform a fuzzy search now */
             mii_search_result_free(&res);

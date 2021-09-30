@@ -24,6 +24,10 @@
 
 #endif // MII_ENABLE_LUA
 
+#if MII_ENABLE_SPIDER
+#include "cjson/cJSON.h"
+#endif
+
 #include <dirent.h>
 #include <errno.h>
 #include <regex.h>
@@ -54,6 +58,10 @@ int _mii_analysis_tcl(const char* path, char*** bins_out, int* num_bins_out);
 
 /* path scanning functions */
 int _mii_analysis_scan_path(char* path, char*** bins_out, int* num_bins_out);
+
+#if MII_ENABLE_SPIDER
+int _mii_analysis_parents_from_json(const cJSON* json, char*** parents_out, int* num_parents_out);
+#endif
 
 #if !MII_ENABLE_LUA
 /*
@@ -342,3 +350,97 @@ char* _mii_analysis_expand(const char* expr) {
     wordfree(&w);
     return output;
 }
+
+#if MII_ENABLE_SPIDER
+
+/* parse the json and fill module info */
+int mii_analysis_parse_module_json(const cJSON* mod_json, mii_modtable_entry* mod) {
+    /* stat the type */
+    struct stat st;
+    if (stat(mod_json->string, &st) != 0) {
+        mii_error("Couldn't stat %s: %s", mod_json->string, strerror(errno));
+        return -1;
+    }
+
+    /* get the code */
+    cJSON* code = cJSON_GetObjectItemCaseSensitive(mod_json, "fullName");
+    if (code == NULL) {
+        mii_error("Couldn't find the code in the JSON!");
+        return -1;
+    }
+
+    /* get the parents */
+    cJSON* parents_arrs = cJSON_GetObjectItemCaseSensitive(mod_json, "parentAA");
+    if(_mii_analysis_parents_from_json(parents_arrs, &mod->parents, &mod->num_parents)) {
+        mii_error("Couldn't get parents from JSON!");
+        return -1;
+    }
+
+    /* fill up some of the info */
+    mod->bins = NULL;
+    mod->num_bins = 0;
+    mod->path = mii_strdup(mod_json->string);
+    mod->type = MII_MODTABLE_MODTYPE_LMOD;
+    mod->timestamp = st.st_mtime;
+    mod->code = mii_strdup(code->valuestring);
+    mod->analysis_complete = 1;
+
+    /* get the bins */
+    cJSON* bin_paths = cJSON_GetObjectItemCaseSensitive(mod_json, "pathA");
+    if (bin_paths != NULL) {
+        for (cJSON* path = bin_paths->child; path != NULL; path = path->next) {
+            /* analyze the bin paths */
+            _mii_analysis_scan_path(path->string, &mod->bins, &mod->num_bins);
+        }
+    }
+
+    return 0;
+}
+
+/* get the parents from a json array (can be NULL) */
+int _mii_analysis_parents_from_json(const cJSON* json, char*** parents_out, int* num_parents_out) {
+    /* if NULL, nothing to do */
+    if (json == NULL) {
+        *parents_out = NULL;
+        *num_parents_out = 0;
+        return 0;
+    }
+
+    /* allocate memory for the parents */
+    *num_parents_out = cJSON_GetArraySize(json);
+    *parents_out = malloc(*num_parents_out * sizeof(char*));
+
+    if (*parents_out == NULL) {
+        mii_error("Couldn't allocate memory for parents: %s", strerror(errno));
+        return -1;
+    }
+
+    size_t i = 0;
+    for (cJSON* parents = json->child; parents != NULL; parents = parents->next) {
+        char* codes_tmp = NULL;
+        size_t parent_len, codes_size = 0;
+
+        for (cJSON* parent = parents->child; parent != NULL; parent = parent->next) {
+            /* allocate memory new code */
+            parent_len = strlen(parent->valuestring);
+            codes_tmp = (char*) realloc(codes_tmp, codes_size + parent_len + 1);
+
+            if (codes_tmp == NULL) {
+                mii_error("Couldn't allocate memory for parents: %s", strerror(errno));
+                free(*parents_out);
+                return -1;
+            }
+
+            /* add new code */
+            if (codes_size != 0) strcpy(codes_tmp + codes_size - 1, " ");
+            strcpy(codes_tmp + codes_size, parent->valuestring);
+
+            codes_size += parent_len + 1;
+        }
+        (*parents_out)[i++] = codes_tmp;
+    }
+
+    return 0;
+}
+
+#endif

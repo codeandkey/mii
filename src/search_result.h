@@ -6,6 +6,7 @@
  */
 
 #include <stdio.h>
+#include <limits.h>
 
 /*
  * export modes
@@ -18,6 +19,10 @@
 #define MII_SEARCH_RESULT_MODE_FUZZY 1
 #define MII_SEARCH_RESULT_MODE_SHOW  2
 
+#define MII_SEARCH_RESULT_PRIORITY_LOADED_PARENT 1
+#define MII_SEARCH_RESULT_PRIORITY_NO_PARENT     INT_MAX-1
+#define MII_SEARCH_RESULT_PRIORITY_LOADED_MOD    INT_MAX
+
 /*
  * output limit when printing fuzzy searches
  */
@@ -26,8 +31,8 @@
 
 typedef struct _mii_search_result {
     int num_results, cur_result;
-    char** codes, **bins, *query;
-    int* distances;
+    char** codes, **bins, **parents, *query;
+    int* distances, *priorities;
 } mii_search_result;
 
 /* structure init + cleanup */
@@ -37,7 +42,7 @@ void mii_search_result_free(mii_search_result* dest);
 
 /* adding results */
 
-void mii_search_result_add(mii_search_result* p, const char* code, const char* bin, int distance);
+void mii_search_result_add(mii_search_result* p, const char* code, const char* bin, int distance, const char* parent);
 
 /* sorting results */
 
@@ -45,7 +50,7 @@ void mii_search_result_sort(mii_search_result* p);
 
 /* reading/outputting results */
 
-int mii_search_result_next(mii_search_result* p, char** code, char** bin, int* distance);
+int mii_search_result_next(mii_search_result* p, char** code, char** bin, char** parent, int* distance);
 int mii_search_result_write(mii_search_result* p, FILE* f, int type, int flags);
 
 #endif
