@@ -146,7 +146,7 @@ int _mii_analysis_lua_run(lua_State* lua_state, const char* code, char*** paths_
     res = lua_pcall(lua_state, 1, 1, 0);
 
     if(res != LUA_OK) {
-        mii_error("Error occured in Lua sandbox : %s", lua_tostring(lua_state, -1));
+        mii_error("Error occurred in Lua sandbox : %s", lua_tostring(lua_state, -1));
         lua_pop(lua_state, 1);
         return -1;
     }
@@ -215,7 +215,7 @@ int _mii_analysis_lmod(const char* path, char*** bins_out, int* num_bins_out) {
         char** bin_paths;
         int num_paths;
         if(_mii_analysis_lua_run(lua_state, buffer, &bin_paths, &num_paths)) {
-            mii_error("Error occured when executing %s, skipping", path);
+            mii_error("Error occurred when executing %s, skipping", path);
             free(buffer);
             return -1;
         }
@@ -286,7 +286,7 @@ int _mii_analysis_tcl(const char* path, char*** bins_out, int* num_bins_out) {
  * scan a path for commands
  */
 int _mii_analysis_scan_path(char* path, char*** bins_out, int* num_bins_out) {
-    /* paths might contain multiple in one (seperated by ':'),
+    /* paths might contain multiple in one (separated by ':'),
      * break them up here */
 
     DIR* d;

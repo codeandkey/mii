@@ -145,7 +145,7 @@ int main(int argc, char** argv) {
         char* cmd = argv[optind];
         int maximum = 3;
 
-        /* optinal third argument limits the number of results */
+        /* optimal third argument limits the number of results */
         if (++optind < argc) {
             maximum = strtol(argv[optind], NULL, 10);
         }
@@ -241,7 +241,7 @@ int main(int argc, char** argv) {
                     if (select_colors) fprintf(stderr, "\033[0;39m");
                     fprintf(stderr, "\n");
                 } else {
-                    /* no near-matches, so we can just recommened some almost similar ones */
+                    /* no near-matches, so we can just recommend some almost similar ones */
                     if (select_colors) fprintf(stderr, "\033[0;39m");
                     fprintf(stderr, "[mii] ");
                     if (select_colors) fprintf(stderr, "\033[0;36m");
