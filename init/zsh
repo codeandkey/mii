@@ -34,5 +34,5 @@ command_not_found_handler() {
     # check if sourced
     [[ $ZSH_EVAL_CONTEXT =~ '.*file.*' ]] && SOURCED=1 || SOURCED=0
 
-    source $THISDIR/common $@
+    source $THISDIR/common "$@"
 }

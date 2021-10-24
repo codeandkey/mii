@@ -20,7 +20,7 @@ res=$?
 if [ $res = 0 ]; then
     echo "[mii] loading ${mods[@]} ..." 1>&2
     module load ${mods[@]}
-    $@
+    "$@"
 elif [ $res = 2 ]; then
     echo "$1: command not found!" 1>&2
 fi
