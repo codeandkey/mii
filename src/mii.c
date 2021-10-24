@@ -156,7 +156,7 @@ int mii_build() {
 
 int mii_sync() {
     /*
-     * SYNC: sychronize the index if necessary
+     * SYNC: synchronize the index if necessary
      */
 
     mii_modtable index;
