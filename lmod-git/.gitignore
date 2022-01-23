@@ -1,7 +1,0 @@
-# makepkg files
-pkg/
-src/
-*.xz
-
-# source files
-lmod/
