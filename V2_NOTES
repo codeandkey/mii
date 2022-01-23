@@ -1,0 +1,8 @@
+### mii - version 2 target
+
+- All features from v1 should be maintained
+- Hierarchal modules without lmod dependency
+- C++11 migration
+- CI + testing via mtest
+- Less intrusive, complicated logging
+- Actual documentation

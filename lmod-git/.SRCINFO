@@ -1,0 +1,24 @@
+pkgbase = lmod-git
+	pkgdesc = Environment modules system based on Lua that handles MODULEPATH hierarchical problem. Supports also legacy TCL modules
+	pkgver = 8.3.5.r1.gc6822f74
+	pkgrel = 1
+	url = https://github.com/TACC/Lmod
+	arch = x86_64
+	license = custom:lmod
+	makedepends = git
+	depends = bash
+	depends = lua-filesystem
+	depends = lua-posix
+	depends = procps-ng
+	depends = tcl
+	optdepends = tcsh: supported shell
+	optdepends = zsh: supported shell
+	provides = lmod
+	provides = env-modules-tcl
+	conflicts = env-modules-tcl
+	options = !emptydirs
+	source = lmod::git+https://github.com/TACC/Lmod.git
+	sha256sums = SKIP
+
+pkgname = lmod-git
+

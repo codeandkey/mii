@@ -5,44 +5,28 @@ ifndef $(REALPREFIX)
 REALPREFIX = $(PREFIX)
 endif
 
-CC         = gcc
-CFLAGS     = -std=c99 -Wall -Werror -Wno-format-security -pedantic -O3 -DMII_RELEASE -DMII_PREFIX="\"$(REALPREFIX)\"" -DMII_BUILD_TIME="\"$(shell date)\""
-LDFLAGS    =
-C_OUTPUT   = mii
-OUTPUTS    = $(C_OUTPUT)
+BUILD      = $(shell date "%D:%M:%Y")
 
-C_SOURCES = $(wildcard src/*.c) src/xxhash/xxhash.c
-C_OBJECTS = $(C_SOURCES:.c=.o)
+CC         = g++
+CFLAGS     = -std=c++11 -Wall -Werror -Wno-format-security -pedantic -O3 -DMII_DEBUG -DMII_PREFIX="\"$(REALPREFIX)\"" -DMII_BUILD_TIME="\"$(BUILD)\""
+LDFLAGS    = -llua
+
+C_SOURCES  = $(wildcard src/*.cpp) src/xxhash/xxhash.cpp
+C_OBJECTS  = $(C_SOURCES:.cpp=.o)
+C_OUTPUT   = mii
 
 LUA_SOURCES = src/lua/utils.lua src/lua/sandbox.lua
 LUA_OUTPUT  = sandbox.luac
 LUAC        = luac
 
-MII_ENABLE_LUA  ?= no
-MII_LUA_LDFLAG  ?= -llua
-MII_LUA_INCLUDE ?=
-
-MII_ENABLE_SPIDER ?= no
-C_JSON_SOURCES     = src/cjson/cJSON.c
-C_JSON_OBJECTS     = $(C_JSON_SOURCES:.c=.o)
-
-ifeq ($(MII_ENABLE_LUA), yes)
-CFLAGS  += -DMII_ENABLE_LUA $(MII_LUA_INCLUDE)
-LDFLAGS += $(MII_LUA_LDFLAG)
-OUTPUTS += $(LUA_OUTPUT)
-endif
-
-ifeq ($(MII_ENABLE_SPIDER), yes)
-CFLAGS 	  += -DMII_ENABLE_SPIDER
-C_SOURCES += $(C_JSON_SOURCES)
-endif
+OUTPUTS    = $(C_OUTPUT) $(LUA_OUTPUT)
 
 all: $(OUTPUTS)
 
 $(C_OUTPUT): $(C_OBJECTS)
 	$(CC) $(C_OBJECTS) $(LDFLAGS) -o $(C_OUTPUT)
 
-%.o: %.c
+%.o: %.cpp
 	$(CC) $(CFLAGS) -c $< -o $@
 
 $(LUA_OUTPUT): $(LUA_SOURCES)
