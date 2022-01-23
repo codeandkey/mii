@@ -1,6 +1,8 @@
 #pragma once
 
 #include <memory>
+#include <string>
+#include <vector>
 
 #include <lua.hpp>
 
@@ -21,6 +23,15 @@ public:
         
         return *inst;
     }
+
+    /**
+     * Analyzes a Lua modulefile and fills a vector of PATHs and modulepaths.
+     * 
+     * @param path Module file path.
+     * @param out_paths Output PATH vector.
+     * @param out_mpaths Output MODULEPATH vector.
+     */
+    void analyze(std::string path, std::vector<std::string>& out_paths, std::vector<std::string>& out_mpaths);
 
 private:
     Sandbox();

@@ -22,7 +22,7 @@ string options::prefix(std::string arg0)
             throw runtime_error("Invalid arg0, cannot determine prefix");
         
         arg0.erase(arg0.begin() + pt, arg0.end());
-        prefix_value = arg0;
+        prefix_value = arg0 + "/../";
     }
 
     if (!prefix_value.size())
@@ -33,5 +33,5 @@ string options::prefix(std::string arg0)
 
 string options::version()
 {
-    return string(MII_VERSION) + ":" + string(MII_BUILD_TIME);
+    return MII_VERSION;
 }

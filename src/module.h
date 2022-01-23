@@ -21,11 +21,16 @@ public:
      */
     Module(std::string path);
 
-private:
-    std::vector<std::string> binaries;
-    std::vector<std::unique_ptr<Module>> children;
+    std::vector<std::string>& get_bins() {
+        return bins;
+    }
 
-    void analyze_lua(std::istream& data);
+    std::vector<std::string>& get_mpaths() {
+        return mpaths;
+    }
+
+private:
+    std::vector<std::string> bins, mpaths;
 }; // class Module
 
 } // namespace mii

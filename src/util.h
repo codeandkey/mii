@@ -1,6 +1,8 @@
 #pragma once
 
 #include <cstdarg>
+#include <vector>
+#include <string>
 
 namespace mii {
 namespace util {
@@ -11,6 +13,14 @@ namespace util {
      * @param ... Log values.
      */
     void debug(const char* fmt, ...);
+
+    /**
+     * Scans a PATH for executable files.
+     * 
+     * @param path Path to scan.
+     * @return List of available binaries.
+     */
+    std::vector<std::string> scan_path(std::string path);
 
 } // namespace util
 } // namespace mii
