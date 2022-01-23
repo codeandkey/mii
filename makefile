@@ -13,7 +13,7 @@ LDFLAGS    = -llua
 
 C_SOURCES  = $(wildcard src/*.cpp) src/xxhash/xxhash.cpp
 C_OBJECTS  = $(C_SOURCES:.cpp=.o)
-C_OUTPUT   = mii
+C_OUTPUT   = bin/mii
 
 LUA_SOURCES = src/lua/utils.lua src/lua/sandbox.lua
 LUA_OUTPUT  = sandbox.luac
