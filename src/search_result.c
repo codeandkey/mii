@@ -421,3 +421,29 @@ int _mii_search_result_get_priority(const char* parents, const char* code) {
 
     return priority;
 }
+
+
+int mii_search_result_get_unique_bins(mii_search_result* res, char*** bins_out, int* num_results) {
+    /* get first <*num_results> unique bins */
+
+    int unique_count = 0;
+
+    for (int i = 0, j; i < res->num_results && unique_count < *num_results; ++i) {
+        for (j = 0 ; j < unique_count; ++j) {
+            if (strcmp(res->bins[i], (*bins_out)[j]) == 0) {
+                /* duplicate found */
+                break;
+            }
+        }
+        if (j == unique_count) {
+            /* unique bin */
+            *bins_out = realloc(*bins_out, sizeof(char*) * (unique_count + 1));
+            (*bins_out)[unique_count++] = res->bins[i];
+        }
+    }
+
+    /* return true number of unique bins */
+    *num_results = unique_count;
+
+    return 0;
+}

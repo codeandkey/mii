@@ -241,7 +241,9 @@ int main(int argc, char** argv) {
                     if (select_colors) fprintf(stderr, "\033[0;39m");
                     fprintf(stderr, "\n");
                 } else {
-                    /* no near-matches, so we can just recommend some almost similar ones */
+                    /* no near-matches, so we can just recommened some almost similar (and unique) ones */
+                    char** bins = NULL;
+                    mii_search_result_get_unique_bins(&res, &bins, &maximum);
                     if (select_colors) fprintf(stderr, "\033[0;39m");
                     fprintf(stderr, "[mii] ");
                     if (select_colors) fprintf(stderr, "\033[0;36m");
@@ -249,12 +251,14 @@ int main(int argc, char** argv) {
                     if (select_colors) fprintf(stderr, "\033[0;39m");
                     fprintf(stderr, " not found! Similar commands: ");
 
-                    for (int i = 0; i < maximum && i < res.num_results; ++i) {
+                    for (int i = 0; i < maximum; ++i) {
                         if (select_colors) fprintf(stderr, "\033[0;39m");
                         if (i) fprintf(stderr, ", ");
                         if (select_colors) fprintf(stderr, "\033[0;36m");
-                        fprintf(stderr, "\"%s\"", res.bins[i]);
+                        fprintf(stderr, "\"%s\"", bins[i]);
                     }
+
+                    free(bins);
 
                     if (select_colors) fprintf(stderr, "\033[0;39m");
                     fprintf(stderr, "\n");

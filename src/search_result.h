@@ -44,9 +44,10 @@ void mii_search_result_free(mii_search_result* dest);
 
 void mii_search_result_add(mii_search_result* p, const char* code, const char* bin, int distance, const char* parent);
 
-/* sorting results */
+/* sorting/filtering results */
 
 void mii_search_result_sort(mii_search_result* p);
+int mii_search_result_get_unique_bins(mii_search_result* res, char*** bins_out, int* num_results);
 
 /* reading/outputting results */
 
