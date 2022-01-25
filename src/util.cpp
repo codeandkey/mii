@@ -23,7 +23,7 @@ void util::debug(const char* fmt, ...)
     va_end(args);
 }
 
-std::vector<std::string> util::scan_path(std::string path, ScanType type)
+vector<string> util::scan_path(string path, ScanType type)
 {
     DIR* d;
     struct dirent* dp;
