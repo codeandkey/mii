@@ -14,13 +14,19 @@ namespace util {
      */
     void debug(const char* fmt, ...);
 
+    enum ScanType {
+        BINARIES,
+        LMOD,
+    };
+
     /**
-     * Scans a PATH for executable files.
+     * Scans a PATH for executable files or lmod files.
      * 
      * @param path Path to scan.
+     * @param type Type to scan.
      * @return List of available binaries.
      */
-    std::vector<std::string> scan_path(std::string path);
+    std::vector<std::string> scan_path(std::string path, ScanType type);
 
 } // namespace util
 } // namespace mii
