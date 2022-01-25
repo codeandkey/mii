@@ -56,31 +56,47 @@ void Sandbox::analyze(string path, vector<string>& out_paths, vector<string>& ou
     vector<char> code;
 
     f.seekg(0, ios::beg);
-    code.reserve(sz);
+    code.resize(sz);
     f.read(code.data(), sz);
+    code.push_back('\0');
 
     // Prep sandbox function
     lua_getglobal(state, "sandbox_run");
     lua_pushstring(state, code.data());
 
     // Execute modulefile
-    if(lua_pcall(state, 1, 1, 0) != LUA_OK)
-    {
-        lua_pop(state, 1);
+    if(lua_pcall(state, 1, 2, 0) != LUA_OK)
         throw runtime_error("Error occurred in Lua sandbox : " + string(lua_tostring(state, -1)));
-    }
 
-    luaL_checktype(state, 1, LUA_TTABLE);
+    if (lua_type(state, -1) != LUA_TTABLE)
+        throw runtime_error(string("Sandbox path returned non-table: ") + lua_typename(state, lua_type(state, -1)));
+
+    if (lua_type(state, -2) != LUA_TTABLE)
+        throw runtime_error(string("Sandbox mpath returned non-table: ") + lua_typename(state, lua_type(state, -2)));
 
     // Grab paths
     int num_paths = mii_lua_len(state, -1);
 
     for (int i = 1; i <= num_paths; ++i)
     {
-        lua_rawgeti(state, -i, i);
+        lua_rawgeti(state, -1, i);
         out_paths.push_back(lua_tostring(state, -1));
+        lua_pop(state, 1);
     }
 
-    // Pop rawgeti + table off
-    lua_pop(state, num_paths + 1);
+    // Pop pathtable
+    lua_pop(state, 1);
+
+    // Grab mpaths
+    int num_mpaths = mii_lua_len(state, -1);
+
+    for (int i = 1; i <= num_mpaths; ++i)
+    {
+        lua_rawgeti(state, -1, i);
+        out_mpaths.push_back(lua_tostring(state, -1));
+        lua_pop(state, 1);
+    }
+
+    // Pop mpath table
+    lua_pop(state, 1);
 }

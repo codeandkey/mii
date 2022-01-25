@@ -48,7 +48,7 @@ std::vector<std::string> util::scan_path(std::string path)
         mii_debug("scanning PATH %s", cur_path.c_str());
 
         if (!(d = opendir(cur_path.c_str()))) {
-            mii_debug("Failed to open %s, ignoring : %s", cur_path, strerror(errno));
+            mii_debug("Failed to open %s, ignoring : %s", cur_path.c_str(), strerror(errno));
             continue;
         }
 

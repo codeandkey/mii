@@ -21,6 +21,11 @@ public:
      */
     Module(std::string path);
 
+    /**
+     * Deserializes a module from an index file.
+     */
+    Module(std::istream& inp);
+
     std::vector<std::string>& get_bins() {
         return bins;
     }
@@ -29,8 +34,15 @@ public:
         return mpaths;
     }
 
+    /**
+     * Serializes a module to a binary stream.
+     */
+    friend std::ostream& operator<<(std::ostream& dst, const Module& rhs);
+
 private:
     std::vector<std::string> bins, mpaths;
+    std::string parent_mpath, abs_path;
+    time_t index_time;
 }; // class Module
 
 } // namespace mii

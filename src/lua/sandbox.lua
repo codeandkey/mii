@@ -129,6 +129,7 @@ test_env.dofile   = dofile
 -- @param untrusted_code A string containing lua code
 function sandbox_run(untrusted_code)
     paths = {}
+    mpaths = {}
     loadcode(untrusted_code)()
-    return paths
+    return mpaths, paths
 end

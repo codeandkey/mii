@@ -14,7 +14,7 @@ int main(int argc, char** argv) {
     mii_debug("prefix: %s\n", options::prefix().c_str());
     mii_debug("version: %s\n", options::version().c_str());
 
-    Module m("/home/jtst/git/spack/share/spack/lmod/linux-archrolling-x86_64/Core/automake/1.16.3-sni3p47.lua");
+    Module m("/home/jtst/git/spack/share/spack/lmod/linux-archrolling-x86_64/Core/tar/1.31-o7sv4hx.lua");
 
     // print module paths
 
