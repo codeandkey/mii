@@ -1,11 +1,11 @@
-#define _POSIX_C_SOURCE 200809L
-
-#include "util.h"
-
 #include <cstring>
+#include <stdexcept>
+
 #include <sys/stat.h>
 #include <unistd.h>
 #include <dirent.h>
+
+#include "util.h"
 
 using namespace mii;
 using namespace std;
@@ -23,51 +23,49 @@ void util::debug(const char* fmt, ...)
     va_end(args);
 }
 
-vector<string> util::scan_path(string path, ScanType type)
+void util::scan(string& path, function<void(string&, string)> callback, int depth, string rel)
 {
     DIR* d;
     struct dirent* dp;
     struct stat st;
 
-    vector<string> bins_out, subpaths;
+    mii_debug("walking path %s", path.c_str());
 
-    string tok;
-    for (unsigned c = 0; c < path.size(); ++c)
+    if (!(d = opendir(path.c_str())))
+        throw runtime_error("Failed to walk " + path + ": " + strerror(errno));
+
+    while ((dp = readdir(d)))
     {
-        if (path[c] == ':') {
-            if (tok.size()) subpaths.push_back(tok);
-        } else {
-            tok += path[c];
-        }
-    }
-
-    if (tok.size()) subpaths.push_back(tok);
-
-    for (auto& cur_path : subpaths)
-    {
-        mii_debug("scanning PATH %s", cur_path.c_str());
-
-        if (!(d = opendir(cur_path.c_str()))) {
-            mii_debug("Failed to open %s, ignoring : %s", cur_path.c_str(), strerror(errno));
+        // Ignore self and parent dirs
+        if (*dp->d_name == '.')
             continue;
+
+        string abs_path = path + "/" + dp->d_name;
+
+        if (stat(abs_path.c_str(), &st))
+            mii_debug("couldn't stat %s : %s", abs_path.c_str(), strerror(errno));
+
+        if (S_ISDIR(st.st_mode))
+        {
+            if (depth > 0) scan(abs_path, callback, depth - 1, rel + dp->d_name + "/");
+        } else
+        {
+            callback(abs_path, rel + dp->d_name);
         }
-
-        while ((dp = readdir(d))) {
-            if (!strcmp(dp->d_name, ".") || !strcmp(dp->d_name, "..")) continue;
-
-            string abs_path = cur_path + "/" + dp->d_name;
-
-            if (!stat(abs_path.c_str(), &st)) {
-                if ((S_ISREG(st.st_mode) || S_ISLNK(st.st_mode)) && !access(abs_path.c_str(), X_OK)) {
-                    bins_out.push_back(dp->d_name);
-                }
-            } else {
-                mii_debug("Couldn't stat %s : %s", abs_path.c_str(), strerror(errno));
-            }
-        }
-
-        closedir(d);
     }
 
-    return bins_out;
+    closedir(d);
+}
+
+string util::basename(string& path) {
+    auto sep = path.rfind("/");
+
+    if (sep == string::npos)
+        return path;
+    
+    return path.substr(sep + 1);
+}
+
+bool util::is_binary(string path) {
+    return !access(path.c_str(), X_OK);
 }

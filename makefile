@@ -12,7 +12,7 @@ CC         = g++
 CFLAGS     = -std=c++11 -Wall -Werror -Wno-format-security -pedantic -g -DMII_DEBUG -DMII_PREFIX="\"$(REALPREFIX)\"" -DMII_BUILD_TIME="\"$(BUILD)\"" -DMII_VERSION=\"$(VERSION)\"
 LDFLAGS    = -llua
 
-C_SOURCES  = $(wildcard src/*.cpp) src/xxhash/xxhash.cpp
+C_SOURCES  = $(wildcard src/*.cpp)
 C_OBJECTS  = $(C_SOURCES:.cpp=.o)
 C_OUTPUT   = bin/mii
 

@@ -9,7 +9,7 @@
 using namespace mii;
 using namespace std;
 
-Module::Module(string path)
+Module::Module(string code, string path)
 {
     ifstream fd(path);
 
@@ -27,12 +27,17 @@ Module::Module(string path)
     // Scan paths and eliminate duplicates
     for (auto& path: paths)
     {
-        auto local_bins = util::scan_path(path);
-        bins.insert(bins.end(), local_bins.begin(), local_bins.end());
+        util::scan(path, [&](string& path, string rel) {
+            if (util::is_binary(path))
+                bins.push_back(util::basename(path));
+        });
     }
 
     sort(bins.begin(), bins.end());
     bins.erase(unique(bins.begin(), bins.end()), bins.end());
+
+    this->code = code;
+    this->abs_path = path;
 }
 
 Module::Module(std::istream& inp)
@@ -109,7 +114,16 @@ Module::Module(std::istream& inp)
     // 8. Fullpath data    
     abs_path.resize(fp_length);
     check_eof();
-    inp.read((char*) &abs_path[0], fp_length);
+    inp.read(&abs_path[0], fp_length);
+
+    // 9. Loading code len
+    uint32_t code_len;
+    check_eof();
+    inp.read((char*) &code_len, sizeof code_len);
+
+    // 10. Loading code data.
+    code.resize(code_len);
+    inp.read(&code[0], code_len);
 }
 
 namespace mii { // needed for overload
@@ -156,7 +170,14 @@ ostream& operator<<(ostream& lhs, const Module& rhs)
     lhs.write((char*) &fp_length, sizeof fp_length);
 
     // 8. Fullpath data
-    lhs.write((char*) &rhs.abs_path[0], fp_length);
+    lhs.write(&rhs.abs_path[0], fp_length);
+
+    // 9. Loading code length
+    uint32_t code_len = rhs.code.size();
+    lhs.write((char*) &code_len, sizeof code_len);
+
+    // 10. Loading code data
+    lhs.write(&rhs.code[0], code_len);
 
     return lhs;
 }
