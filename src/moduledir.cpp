@@ -4,14 +4,16 @@
 using namespace mii;
 using namespace std;
 
-ModuleDir::ModuleDir(string path)
+ModuleDir::ModuleDir(string path, string parent, string parent_dir)
 {
     util::scan(path, [&](string& fpath, string relpath) {
         if (fpath.size() >= 5 && fpath.substr(fpath.size() - 4) == ".lua")
             modules.emplace_back(relpath.substr(0, relpath.size() - 4), fpath);
     }, 1);
 
-    root = path;
+    this->root = path;
+    this->parent = parent;
+    this->parent_dir = parent_dir;
 }
 
 ModuleDir::ModuleDir(istream& inp)
@@ -35,12 +37,32 @@ ModuleDir::ModuleDir(istream& inp)
     check_eof();
     inp.read(&root[0], root_len);
 
-    // 3. Module count
+    // 3. Parent code length
+    uint32_t parent_len;
+    check_eof();
+    inp.read((char*) &parent_len, sizeof parent_len);
+
+    // 4. Parent code data
+    parent.resize(parent_len);
+    check_eof();
+    inp.read(&parent[0], parent_len);
+
+    // 5. Parent mpath length
+    uint32_t parent_mplen;
+    check_eof();
+    inp.read((char*) &parent_mplen, sizeof parent_mplen);
+
+    // 6. Parent code data
+    parent_dir.resize(parent_mplen);
+    check_eof();
+    inp.read(&parent_dir[0], parent_mplen);
+
+    // 7. Module count
     uint32_t module_count;
     check_eof();
     inp.read((char*) &module_count, sizeof module_count);
 
-    // 4. Individual modules
+    // 8. Individual modules
     for (unsigned i = 0; i < module_count; ++i) {
         modules.emplace_back(inp);
     }
@@ -59,11 +81,25 @@ ostream& operator<<(ostream& lhs, const ModuleDir& rhs)
     // 2. Root data
     lhs.write(&rhs.root[0], root_len);
 
-    // 3. Module count
+    // 3. Parent code length
+    uint32_t parent_len = rhs.parent.size();
+    lhs.write((char*) &parent_len, sizeof parent_len);
+
+    // 4. Parent code data
+    lhs.write(&rhs.parent[0], parent_len);
+
+    // 5. Parent mpath length
+    uint32_t parent_mplen = rhs.parent_dir.size();
+    lhs.write((char*) &parent_mplen, sizeof parent_mplen);
+
+    // 6. Parent code data
+    lhs.write(&rhs.parent_dir[0], parent_mplen);
+
+    // 7. Module count
     uint32_t module_count = rhs.modules.size();
     lhs.write((char*) &module_count, sizeof module_count);
 
-    // 4. Individual modules
+    // 8. Individual modules
     for (unsigned i = 0; i < module_count; ++i) {
         lhs << rhs.modules[i];
     }

@@ -43,7 +43,6 @@ Module::Module(string code, string path)
 Module::Module(std::istream& inp)
 {
     // Read module data from input stream
-    
     if (!(inp.flags() & ios::binary))
         throw runtime_error("Module must be parsed from binary stream");
 
@@ -53,27 +52,13 @@ Module::Module(std::istream& inp)
             throw runtime_error("Unexpected EOF parsing module");
     };
 
-    // 1. Parent modulepath len
-    uint32_t parent_mpath_len;
-
-    check_eof();
-    inp.read((char*) &parent_mpath_len, sizeof parent_mpath_len);
-
-    // 2. Parent modulepath data
-    if (parent_mpath_len)
-    {
-        parent_mpath.resize(parent_mpath_len);
-        check_eof();
-        inp.read(&parent_mpath[0], parent_mpath_len);
-    }
-
-    // 3. Binary count
+    // 1. Binary count
     uint32_t num_bins;
     check_eof();
     inp.read((char*) &num_bins, sizeof num_bins);
     bins.reserve(num_bins);
 
-    // 4. Binary blocks
+    // 2. Binary blocks
     for (unsigned i = 0; i < num_bins; ++i)
     {
         std::string cbin;
@@ -87,12 +72,12 @@ Module::Module(std::istream& inp)
         bins.push_back(cbin);
     }
 
-    // 5. Child mpath count
+    // 3. Child mpath count
     uint32_t num_mpaths;
     check_eof();
     inp.read((char*) &num_mpaths, sizeof num_mpaths);
 
-    // 6. Child mpath blocks
+    // 4. Child mpath blocks
     for (unsigned i = 0; i < num_mpaths; ++i)
     {
         std::string cmpath;
@@ -106,22 +91,22 @@ Module::Module(std::istream& inp)
         mpaths.push_back(cmpath);
     }
 
-    // 7. Fullpath length
+    // 5. Fullpath length
     uint32_t fp_length;
     check_eof();
     inp.read((char*) &fp_length, sizeof fp_length);
 
-    // 8. Fullpath data    
+    // 6. Fullpath data    
     abs_path.resize(fp_length);
     check_eof();
     inp.read(&abs_path[0], fp_length);
 
-    // 9. Loading code len
+    // 7. Loading code len
     uint32_t code_len;
     check_eof();
     inp.read((char*) &code_len, sizeof code_len);
 
-    // 10. Loading code data.
+    // 8. Loading code data.
     code.resize(code_len);
     inp.read(&code[0], code_len);
 }
@@ -132,19 +117,11 @@ ostream& operator<<(ostream& lhs, const Module& rhs)
     if (!(lhs.flags() & ios::binary))
         throw runtime_error("Module cannot serialize to non-binary streams");
 
-    // 1. Parent modulepath len
-    uint32_t parent_mpath_len = rhs.parent_mpath.size();
-    lhs.write((char*) &parent_mpath_len, sizeof parent_mpath_len);
-
-    // 2. Parent modulepath data
-    if (parent_mpath_len)
-        lhs.write(&rhs.parent_mpath[0], parent_mpath_len);
-
-    // 3. Binary count
+    // 1. Binary count
     uint32_t num_bins = rhs.bins.size();
     lhs.write((char*) &num_bins, sizeof num_bins);
 
-    // 4. Binary blocks
+    // 2. Binary blocks
     for (unsigned i = 0; i < num_bins; ++i)
     {
         uint8_t bin_length = rhs.bins[i].size();
@@ -152,11 +129,11 @@ ostream& operator<<(ostream& lhs, const Module& rhs)
         lhs.write(&rhs.bins[i][0], bin_length);
     }
 
-    // 5. Child mpath count
+    // 3. Child mpath count
     uint32_t num_mpaths = rhs.mpaths.size();
     lhs.write((char*) &num_mpaths, sizeof num_mpaths);
 
-    // 6. Child mpath blocks
+    // 4. Child mpath blocks
     for (unsigned i = 0; i < num_mpaths; ++i)
     {
         uint8_t mpath_length = rhs.mpaths[i].size();
@@ -165,18 +142,18 @@ ostream& operator<<(ostream& lhs, const Module& rhs)
         lhs.write(&rhs.mpaths[i][0], mpath_length);
     }
 
-    // 7. Fullpath length
+    // 5. Fullpath length
     uint32_t fp_length = rhs.abs_path.size();
     lhs.write((char*) &fp_length, sizeof fp_length);
 
-    // 8. Fullpath data
+    // 6. Fullpath data
     lhs.write(&rhs.abs_path[0], fp_length);
 
-    // 9. Loading code length
+    // 7. Loading code length
     uint32_t code_len = rhs.code.size();
     lhs.write((char*) &code_len, sizeof code_len);
 
-    // 10. Loading code data
+    // 8. Loading code data
     lhs.write(&rhs.code[0], code_len);
 
     return lhs;

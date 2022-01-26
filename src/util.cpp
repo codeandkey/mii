@@ -47,7 +47,7 @@ void util::scan(string& path, function<void(string&, string)> callback, int dept
 
         if (S_ISDIR(st.st_mode))
         {
-            if (depth > 0) scan(abs_path, callback, depth - 1, rel + dp->d_name + "/");
+            if (depth > 0 && is_binary(abs_path)) scan(abs_path, callback, depth - 1, rel + dp->d_name + "/");
         } else
         {
             callback(abs_path, rel + dp->d_name);

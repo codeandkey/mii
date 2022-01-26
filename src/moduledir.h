@@ -14,8 +14,10 @@ public:
      * Recursively scans directories for modules.
      *
      * @param path Module path to scan.
+     * @param parent Parent module code, if applicable
+     * @param parent_dir Containing mpath for parent module, if applicable
      */
-    ModuleDir(std::string path);
+    ModuleDir(std::string path, std::string parent = "", std::string parent_dir = "");
 
     /**
      * Deserializes a saved ModuleDir class from an input stream.
@@ -34,13 +36,22 @@ public:
     /**
      * Gets a reference to the list of modules.
      */
-    const std::vector<Module>& get_modules() {
+    const std::vector<Module>& get_modules() const
+    {
         return modules;
+    }
+
+    /**
+     * Gets the root path of this module directory.
+     */
+    const std::string& get_root() const
+    {
+        return root;
     }
 
 private:
     std::vector<Module> modules;
-    std::string root;
+    std::string root, parent, parent_dir;
 
 }; // class ModuleDir
 } // namespace mii

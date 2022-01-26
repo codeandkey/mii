@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 
-#include "module.h"
+#include "moduledir.h"
 
 namespace mii {
 class Index {
@@ -28,7 +28,7 @@ public:
      * necessary, so the imported modules can be searched. Recursively
      * imports submodulepaths.
      *
-     * @param mpath Module path root. Should be a path to a single directory.
+     * @param mpath Module path root. Should be a path to a *single* directory.
      */
     void import(std::string mpath);
 
@@ -38,8 +38,16 @@ public:
      */
     friend std::ostream& operator<<(std::ostream& lhs, const Index& rhs);
 
+    /**
+     * Gets the list of active modulepaths.
+     */
+    const std::vector<ModuleDir>& get_mpaths() const
+    {
+        return mpaths;
+    }
+
 private:
-    std::map<std::string, std::vector<Module>> indices;
+    std::vector<ModuleDir> mpaths;
 
 }; // class Index
 } // namespace mii

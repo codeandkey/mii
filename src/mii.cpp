@@ -3,7 +3,7 @@
 
 #include "options.h"
 #include "util.h"
-#include "moduledir.h"
+#include "index.h"
 
 using namespace mii;
 using namespace std;
@@ -15,16 +15,24 @@ int main(int argc, char** argv) {
     mii_debug("prefix: %s", options::prefix().c_str());
     mii_debug("version: %s", options::version().c_str());
 
-    ModuleDir md("/home/jtst/git/spack/share/spack/lmod/linux-archrolling-x86_64/Core");
+    Index ind;
+    
+    ind.import("/home/jtst/git/spack/share/spack/lmod/linux-archrolling-x86_64/Core");
 
-    // print module paths
-
-    for (auto& m : md.get_modules()) 
+    for (auto& mp : ind.get_mpaths())
     {
-        cout << "module " << m.get_code() << endl;
+        cout << "mpath " << mp.get_root() << endl;
 
-        for (auto& b : m.get_bins())
-            cout << "\t" << b << endl;
+        for (auto& m : mp.get_modules()) 
+        {
+            cout << "\tmodule " << m.get_code() << endl;
+
+            for (auto& b : m.get_bins())
+                cout << "\t\t" << b << endl;
+
+            for (auto& c : m.get_mpaths())
+                cout << "\t\t[child] " << c << endl;
+        }
     }
 
     return 0;
