@@ -6,6 +6,8 @@
 #include <iterator>
 #include <stdexcept>
 
+#include <lua.hpp>
+
 /* After Lua 5.1, lua_objlen changed name and LUA_OK is defined */
 #if LUA_VERSION_NUM <= 501
 #define mii_lua_len lua_objlen
@@ -17,9 +19,9 @@
 using namespace mii;
 using namespace std;
 
-unique_ptr<Sandbox> Sandbox::inst = nullptr;
+static lua_State* state = nullptr;
 
-Sandbox::Sandbox()
+void sandbox::init()
 {
     state = luaL_newstate();
 
@@ -44,8 +46,17 @@ Sandbox::Sandbox()
     throw runtime_error("Failed to execute sandbox file");
 }
 
-void Sandbox::analyze(string path, vector<string>& out_paths, vector<string>& out_mpaths)
+void sandbox::cleanup()
+{
+    if (state)
+        lua_close(state);
+}
+
+void sandbox::analyze(string path, vector<string>& out_paths, vector<string>& out_mpaths)
 {    
+    if (!state)
+        sandbox::init();
+
     ifstream f(path, ios::binary | ios::ate);
 
     if (!f)

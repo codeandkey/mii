@@ -18,9 +18,6 @@ ModuleDir::ModuleDir(string path, string parent, string parent_dir)
 
 ModuleDir::ModuleDir(istream& inp)
 {
-    if (!(inp.flags() & ios::binary))
-        throw runtime_error("Moduledir must be parsed from binary stream");
-
     auto check_eof = [&]()
     {
         if (inp.eof())
@@ -71,9 +68,6 @@ ModuleDir::ModuleDir(istream& inp)
 namespace mii { // needed for overload
 ostream& operator<<(ostream& lhs, const ModuleDir& rhs)
 {
-    if (!(lhs.flags() & ios::binary))
-        throw runtime_error("Moduledir must be parsed from binary stream");
-
     // 1. Root length
     uint32_t root_len = rhs.root.size();
     lhs.write((char*) &root_len, sizeof root_len);

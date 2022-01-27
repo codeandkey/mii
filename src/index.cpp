@@ -8,9 +8,6 @@ static vector<ModuleDir> mpaths;
 
 void index::load(istream& inp)
 {
-    if (!(inp.flags() & ios::binary))
-        throw runtime_error("Moduledir must be parsed from binary stream");
-
     auto check_eof = [&]()
     {
         if (inp.eof())

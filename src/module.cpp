@@ -20,7 +20,7 @@ Module::Module(string code, string path)
 
     // Perform analysis
     if (string(path.end() - 4, path.end()) == ".lua")
-        Sandbox::get().analyze(path, paths, mpaths);
+        sandbox::analyze(path, paths, mpaths);
     else
         throw runtime_error("Unknown module type for " + path);
 
@@ -42,10 +42,6 @@ Module::Module(string code, string path)
 
 Module::Module(std::istream& inp)
 {
-    // Read module data from input stream
-    if (!(inp.flags() & ios::binary))
-        throw runtime_error("Module must be parsed from binary stream");
-
     auto check_eof = [&]()
     {
         if (inp.eof())
@@ -114,9 +110,6 @@ Module::Module(std::istream& inp)
 namespace mii { // needed for overload
 ostream& operator<<(ostream& lhs, const Module& rhs)
 {
-    if (!(lhs.flags() & ios::binary))
-        throw runtime_error("Module cannot serialize to non-binary streams");
-
     // 1. Binary count
     uint32_t num_bins = rhs.bins.size();
     lhs.write((char*) &num_bins, sizeof num_bins);
