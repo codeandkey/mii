@@ -12,14 +12,12 @@ using namespace std;
 
 void util::debug(const char* fmt, ...) 
 {
-#ifndef MII_DEBUG
-    return;
-#endif
     va_list args;
+
+    if (!getenv("MII_DEBUG")) return;
+
     va_start(args, fmt);
-
     vfprintf(stderr, fmt, args);
-
     va_end(args);
 }
 
@@ -29,7 +27,7 @@ void util::scan(string& path, function<void(string&, string)> callback, int dept
     struct dirent* dp;
     struct stat st;
 
-    mii_debug("walking path %s", path.c_str());
+    mii_debug("walking %s", path.c_str());
 
     if (!(d = opendir(path.c_str())))
         throw runtime_error("Failed to walk " + path + ": " + strerror(errno));
@@ -45,13 +43,14 @@ void util::scan(string& path, function<void(string&, string)> callback, int dept
         if (stat(abs_path.c_str(), &st))
             mii_debug("couldn't stat %s : %s", abs_path.c_str(), strerror(errno));
 
-        if (S_ISDIR(st.st_mode))
-        {
-            if (depth > 0 && is_binary(abs_path)) scan(abs_path, callback, depth - 1, rel + dp->d_name + "/");
-        } else
+        if (!S_ISDIR(st.st_mode))
         {
             callback(abs_path, rel + dp->d_name);
+            continue;
         }
+
+        if (depth > 0 && is_binary(abs_path)) // is_binary just checks perms here
+            scan(abs_path, callback, depth - 1, rel + dp->d_name + "/");
     }
 
     closedir(d);
