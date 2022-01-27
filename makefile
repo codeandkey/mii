@@ -17,7 +17,7 @@ C_OBJECTS  = $(C_SOURCES:.cpp=.o)
 C_OUTPUT   = bin/mii
 
 LUA_SOURCES = src/lua/utils.lua src/lua/sandbox.lua
-LUA_OUTPUT  = sandbox.luac
+LUA_OUTPUT  = share/mii/lua/sandbox.luac
 LUAC        = luac
 
 OUTPUTS    = $(C_OUTPUT) $(LUA_OUTPUT)
@@ -38,11 +38,7 @@ clean:
 
 install: $(OUTPUTS)
 	@echo "Installing mii to $(PREFIX)"
-	mkdir -p $(PREFIX)/bin
-	mkdir -p $(PREFIX)/share/mii
-	cp $(C_OUTPUT) $(PREFIX)/bin
-	cp -r init  $(PREFIX)/share/mii
-ifeq ($(MII_ENABLE_LUA), yes)
-	mkdir -p $(PREFIX)/share/mii/lua
-	cp $(LUA_OUTPUT) $(PREFIX)/share/mii/lua
-endif
+	mkdir -p $(PREFIX)
+	cp -rv bin $(PREFIX)
+	cp -rv share $(PREFIX)
+	cp -rv var $(PREFIX)

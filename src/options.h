@@ -9,7 +9,7 @@
 namespace mii {
 namespace options {
 
-    std::string prefix(std::string arg0="");
+    std::string prefix();
     std::string version();
 
 } // namespace options

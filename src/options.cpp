@@ -1,34 +1,34 @@
 #include "options.h"
 #include "build.h"
 
+#include "util.h"
+
+#include <cerrno>
+#include <cstring>
+#include <ctime>
 #include <stdexcept>
 
-#include <time.h>
 #include <unistd.h>
+#include <sys/stat.h>
 
 using namespace mii;
 using namespace std;
 
-string options::prefix(std::string arg0)
+string options::prefix()
 {
-    static string prefix_value;
+    // Grab absolute path to running binary
+    char* name = realpath("/proc/self/exe", NULL);
 
-    if (arg0.length())
-    {
-        // Find dirname(arg0)
-        auto pt = arg0.rfind('/');
+    string exepath(name);
+    free(name);
 
-        if (arg0.begin() + pt == arg0.end())
-            throw runtime_error("Invalid arg0, cannot determine prefix");
+    auto pt = exepath.rfind('/');
+
+    if (pt >= exepath.size())
+        throw runtime_error("Invalid exepath, cannot determine prefix");
         
-        arg0.erase(arg0.begin() + pt, arg0.end());
-        prefix_value = arg0 + "/../";
-    }
-
-    if (!prefix_value.size())
-        throw runtime_error("Prefix queried before init");
-
-    return prefix_value;
+    exepath.erase(exepath.begin() + pt, exepath.end());
+    return exepath + "/../";
 }
 
 string options::version()
