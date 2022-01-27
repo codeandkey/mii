@@ -57,36 +57,39 @@ std::vector<index::Result> index::search_exact(std::string bin)
     vector<index::Result> output;
 
     for (auto& mp : mpaths)
-    {
-        for (auto& m : mp.get_modules())
+    for (auto& m : mp.get_modules())
+    for (auto& b : m.get_bins())
+        if (b == bin)
         {
-            for (auto& b : m.get_bins())
+            index::Result res;
+
+            res.code = m.get_code();
+            res.relevance = "exact";
+
+            ModuleDir& cur_mp = mp;
+
+            while (cur_mp.get_parent().size())
             {
-                if (b == bin)
-                {
-                    index::Result res;
+                res.parents.push_back(cur_mp.get_parent());
 
-                    res.code = m.get_code();
+                bool found = false;
 
-                    string cparent, cur_mp = mp.get_root();
-
-                    auto find_mp = [&](string rt) -> ModuleDir& {
-                        for (auto& tmp : mpaths)
+                for (auto& tmp : mpaths)
+                    if (tmp.get_root() == cur_mp.get_parent_mpath())
                         {
-                            if (tmp.get_root() == rt)
-                                return tmp;
+                            cur_mp = tmp;
+                            found = true;
+                            break;
                         }
-                    };
-                    
-                    while ((cparent = find_mp(cur_mp).get_parent()).size())
-                    {
-                        res.parents.push_back(cparent);
-                        cur_mp = find_mp(cur_mp).get_parent_mpath();
-                    }
-                }
+
+                if (!found)
+                    throw runtime_error("Parent modulepath " + cur_mp.get_parent_mpath() + " not indexed");
             }
+
+            output.push_back(res);
         }
-    }
+
+    return output;
 }
 
 const vector<ModuleDir>& index::get_mpaths()

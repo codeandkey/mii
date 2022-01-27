@@ -1,5 +1,6 @@
 #include <cstring>
 #include <fstream>
+#include <iomanip>
 #include <iostream>
 #include <string>
 
@@ -17,6 +18,13 @@ using namespace std;
  * @param dst Target index file path
  */
 void cmd_build(string dst);
+
+/**
+ * Searches the index for modules providing a binary.
+ * 
+ * @param bin Binary search query.
+ */
+void cmd_exact(string bin);
 
 int main(int argc, char** argv) {
     // Load prefix
@@ -43,6 +51,15 @@ int main(int argc, char** argv) {
     index::load(inp);
     inp.close();
 
+    if (argc > 1 && string(argv[1]) == "exact")
+    {
+        if (argc < 3)
+            throw runtime_error("expected argmuent");
+
+        cmd_exact(argv[2]);
+        return 0;
+    }
+
     if (!inp)
         throw runtime_error("Couldn't open " + index_path + " for reading: " + strerror(errno));
 
@@ -68,7 +85,8 @@ int main(int argc, char** argv) {
     return 0;
 }
 
-void cmd_build(string dst) {
+void cmd_build(string dst)
+{
     cout << "Building index.." << endl;
 
     char* modulepath_env = getenv("MODULEPATH");
@@ -77,7 +95,14 @@ void cmd_build(string dst) {
         throw runtime_error("MODULEPATH is not set");
 
     for (char* cpath = strtok(modulepath_env, ":"); cpath; cpath = strtok(NULL, ":"))
+    {
+        cout << "Indexing modulepath " << cpath << " .. ";
+        cout.flush();
+
         index::import(cpath);
+
+        cout << "done" << endl;
+    }
 
     ofstream target(dst, ios::binary);
 
@@ -91,4 +116,27 @@ void cmd_build(string dst) {
     target.close();
 
     cout << "done" << endl;
+}
+
+void cmd_exact(string bin) {
+    vector<index::Result> results = index::search_exact(bin);
+
+    if (!results.size())
+    {
+        cout << "No results found for '" << bin << "'" << endl;
+        return;
+    }
+
+    int code_width = 0;
+
+    for (auto& r : results)
+        code_width = max(code_width, (int) r.code.size());
+
+    for (auto& r : results)
+    {
+        cout << setw(code_width) << r.code << endl;
+
+        for (auto& p : r.parents)
+            wcout << L'\x2557' << " "  << wstring(p.begin(), p.end()) << endl;
+    }
 }
