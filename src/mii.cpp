@@ -26,6 +26,11 @@ void cmd_build(string dst);
  */
 void cmd_exact(string bin);
 
+/**
+ * Writes the mii index to stdout.
+ */
+void cmd_list();
+
 int main(int argc, char** argv) {
     // Load prefix
     options::prefix(argv[0]);
@@ -47,9 +52,7 @@ int main(int argc, char** argv) {
     mii_debug("version: %s", options::version().c_str());
 
     // Load index from disk
-    ifstream inp(index_path, ios::binary);
-    index::load(inp);
-    inp.close();
+    index::load(index_path);
 
     if (argc > 1 && string(argv[1]) == "exact")
     {
@@ -60,23 +63,10 @@ int main(int argc, char** argv) {
         return 0;
     }
 
-    if (!inp)
-        throw runtime_error("Couldn't open " + index_path + " for reading: " + strerror(errno));
-
-    for (auto& mp : index::get_mpaths())
+    if (argc > 1 && string(argv[1]) == "list")
     {
-        cout << "mpath " << mp.get_root() << endl;
-
-        for (auto& m : mp.get_modules()) 
-        {
-            cout << "\tmodule " << m.get_code() << endl;
-
-            for (auto& b : m.get_bins())
-                cout << "\t\t" << b << endl;
-
-            for (auto& c : m.get_mpaths())
-                cout << "\t\t[child] " << c << endl;
-        }
+        cmd_list();
+        return 0;
     }
 
     // Cleanup
@@ -104,21 +94,16 @@ void cmd_build(string dst)
         cout << "done" << endl;
     }
 
-    ofstream target(dst, ios::binary);
-
-    if (!target)
-        throw runtime_error("Couldn't open " + dst + " for writing: " + strerror(errno));
-
     cout << "Writing index to " << dst << " .. ";
     cout.flush();
 
-    index::save(target);
-    target.close();
+    index::save(dst);
 
     cout << "done" << endl;
 }
 
-void cmd_exact(string bin) {
+void cmd_exact(string bin)
+{
     vector<index::Result> results = index::search_exact(bin);
 
     if (!results.size())
@@ -134,9 +119,28 @@ void cmd_exact(string bin) {
 
     for (auto& r : results)
     {
-        cout << setw(code_width) << r.code << endl;
+        for (int i = r.parents.size() - 1; i >= 0; --i)
+            cout << r.parents[i] << ":";
 
-        for (auto& p : r.parents)
-            wcout << L'\x2557' << " "  << wstring(p.begin(), p.end()) << endl;
+        cout << r.code << endl;
+    }
+}
+
+void cmd_list()
+{
+    for (auto& mp : index::get_mpaths())
+    {
+        cout << "mpath " << mp.get_root() << endl;
+
+        for (auto& m : mp.get_modules()) 
+        {
+            cout << "\tmodule " << m.get_code() << endl;
+
+            for (auto& b : m.get_bins())
+                cout << "\t\t" << b << endl;
+
+            for (auto& c : m.get_mpaths())
+                cout << "\t\t[child] " << c << endl;
+        }
     }
 }

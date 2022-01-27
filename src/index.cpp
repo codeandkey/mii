@@ -1,13 +1,22 @@
 #include "index.h"
 #include "util.h"
 
+#include <cerrno>
+#include <cstring>
+#include <fstream>
+
 using namespace mii;
 using namespace std;
 
 static vector<ModuleDir> mpaths;
 
-void index::load(istream& inp)
+void index::load(string path)
 {
+    ifstream inp(path, ios::binary);
+
+    if (!inp)
+        throw runtime_error("Couldn't open " + path + " for reading: " + strerror(errno));
+
     auto check_eof = [&]()
     {
         if (inp.eof())
@@ -24,7 +33,7 @@ void index::load(istream& inp)
         mpaths.emplace_back(inp);
 }
 
-void index::import(std::string mpath)
+void index::import(std::string mpath, std::string parent_code, std::string parent_mpath)
 {
     for (auto& mp : mpaths)
         if (mp.get_root() == mpath)
@@ -33,16 +42,21 @@ void index::import(std::string mpath)
             return;
         }
 
-    mpaths.emplace_back(mpath);
+    mpaths.emplace_back(mpath, parent_code, parent_mpath);
 
     // Continue importing new child modulepaths
     for (auto& m : mpaths.back().get_modules())
         for (auto& mp : m.get_mpaths())
-            import(mp);
+            import(mp, m.get_code(), mpath);
 }
 
-void index::save(ostream& dst)
+void index::save(string path)
 {
+    ofstream dst(path);
+
+    if (!dst)
+        throw runtime_error("Couldn't open " + path + " for writing: " + strerror(errno));
+
     // 1. Moduledir count
     uint32_t mpath_count = mpaths.size();
     dst.write((char*) &mpath_count, sizeof mpath_count);

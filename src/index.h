@@ -18,9 +18,9 @@ namespace index {
      * Loads an index from an input stream. The stream must be opened in
      * binary mode.
      *
-     * @param inp Input stream to deserialize from.
+     * @param path Index path.
      */
-    void load(std::istream& inp);
+    void load(std::string path);
 
     /**
      * Imports a module directory into the index. Performs analysis as
@@ -28,16 +28,18 @@ namespace index {
      * imports submodulepaths.
      *
      * @param mpath Module path root. Should be a path to a *single* directory.
+     * @param parent_code Moduledir parent code, if applicable
+     * @param parent_mpath Moduledir parent mpath, if applicable
      */
-    void import(std::string mpath);
+    void import(std::string mpath, std::string parent_code="", std::string parent_mpath="");
 
     /**
      * Serializes the index to an output stream. The output stream must be
      * opened in binary mode.
      * 
-     * @param dst Output stream.
+     * @param path Output path.
      */
-    void save(std::ostream& dst);
+    void save(std::string path);
 
     /**
      * Searches the index for all exact matches of a single binary.
