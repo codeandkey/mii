@@ -9,6 +9,11 @@
 
 namespace mii {
 namespace index {
+    struct Result {
+        std::string code, relevance;
+        std::vector<std::string> parents;
+    };
+
     /**
      * Loads an index from an input stream. The stream must be opened in
      * binary mode.
@@ -29,8 +34,17 @@ namespace index {
     /**
      * Serializes the index to an output stream. The output stream must be
      * opened in binary mode.
+     * 
+     * @param dst Output stream.
      */
     void save(std::ostream& dst);
+
+    /**
+     * Searches the index for all exact matches of a single binary.
+     * 
+     * @param bin Binary to search
+     */
+    std::vector<Result> search_exact(std::string bin);
 
     /**
      * Gets the list of active modulepaths.

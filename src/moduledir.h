@@ -49,6 +49,22 @@ public:
         return root;
     }
 
+    /**
+     * Gets the parent module code, if there is one.
+     */
+    const std::string& get_parent() const
+    {
+        return parent;
+    }
+
+    /**
+     * Gets the parent module mpath, if there is one.
+     */
+    const std::string& get_parent_mpath() const
+    {
+        return parent_dir;
+    }
+
 private:
     std::vector<Module> modules;
     std::string root, parent, parent_dir;

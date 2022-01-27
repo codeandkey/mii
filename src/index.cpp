@@ -52,6 +52,43 @@ void index::save(ostream& dst)
         dst << md;
 }
 
+std::vector<index::Result> index::search_exact(std::string bin)
+{
+    vector<index::Result> output;
+
+    for (auto& mp : mpaths)
+    {
+        for (auto& m : mp.get_modules())
+        {
+            for (auto& b : m.get_bins())
+            {
+                if (b == bin)
+                {
+                    index::Result res;
+
+                    res.code = m.get_code();
+
+                    string cparent, cur_mp = mp.get_root();
+
+                    auto find_mp = [&](string rt) -> ModuleDir& {
+                        for (auto& tmp : mpaths)
+                        {
+                            if (tmp.get_root() == rt)
+                                return tmp;
+                        }
+                    };
+                    
+                    while ((cparent = find_mp(cur_mp).get_parent()).size())
+                    {
+                        res.parents.push_back(cparent);
+                        cur_mp = find_mp(cur_mp).get_parent_mpath();
+                    }
+                }
+            }
+        }
+    }
+}
+
 const vector<ModuleDir>& index::get_mpaths()
 {
     return mpaths;
