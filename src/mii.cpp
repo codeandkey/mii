@@ -27,6 +27,13 @@ void cmd_build(string dst);
 void cmd_exact(string bin);
 
 /**
+ * Searches the index for modules providing similar binaries.
+ * 
+ * @param bin Binary search query.
+ */
+void cmd_search(string bin);
+
+/**
  * Writes the mii index to stdout.
  */
 void cmd_list();
@@ -59,6 +66,15 @@ int main(int argc, char** argv) {
             throw runtime_error("expected argmuent");
 
         cmd_exact(argv[2]);
+        return 0;
+    }
+
+    if (argc > 1 && string(argv[1]) == "search")
+    {
+        if (argc < 3)
+            throw runtime_error("expected argmuent");
+
+        cmd_search(argv[2]);
         return 0;
     }
 
@@ -104,6 +120,30 @@ void cmd_build(string dst)
 void cmd_exact(string bin)
 {
     vector<index::Result> results = index::search_exact(bin);
+
+    if (!results.size())
+    {
+        cout << "No results found for '" << bin << "'" << endl;
+        return;
+    }
+
+    int code_width = 0;
+
+    for (auto& r : results)
+        code_width = max(code_width, (int) r.code.size());
+
+    for (auto& r : results)
+    {
+        for (int i = r.parents.size() - 1; i >= 0; --i)
+            cout << r.parents[i] << ":";
+
+        cout << r.code << endl;
+    }
+}
+
+void cmd_search(string bin)
+{
+    vector<index::Result> results = index::search_fuzzy(bin);
 
     if (!results.size())
     {

@@ -10,8 +10,9 @@
 namespace mii {
 namespace index {
     struct Result {
-        std::string code, relevance;
+        std::string code;
         std::vector<std::string> parents;
+        int distance;
     };
 
     /**
@@ -47,6 +48,14 @@ namespace index {
      * @param bin Binary to search
      */
     std::vector<Result> search_exact(std::string bin);
+
+    /**
+     * Searches the index for partial binary matches.
+     * 
+     * @param bin Binary to search
+     * @param nres Number of results to return
+     */
+    std::vector<Result> search_fuzzy(std::string bin, int nres = 10);
 
     /**
      * Gets the list of active modulepaths.

@@ -78,7 +78,7 @@ std::vector<index::Result> index::search_exact(std::string bin)
             index::Result res;
 
             res.code = m.get_code();
-            res.relevance = "exact";
+            res.distance = 0;
 
             ModuleDir& cur_mp = mp;
 
@@ -101,6 +101,55 @@ std::vector<index::Result> index::search_exact(std::string bin)
             }
 
             output.push_back(res);
+        }
+
+    return output;
+}
+
+std::vector<index::Result> index::search_fuzzy(std::string bin, int nres)
+{
+    vector<index::Result> output;
+
+    for (auto& mp : mpaths)
+    for (auto& m : mp.get_modules())
+    for (auto& b : m.get_bins())
+        {
+            int score = util::distance(b, bin);
+
+            // See if score can replace some results.
+            for (int i = 0; i < nres; ++i)
+            {
+                if (i >= (int) output.size() || score < output[i].distance) {
+                    // Keep this result
+                    index::Result res;
+
+                    res.code = m.get_code();
+                    res.distance = score;
+
+                    ModuleDir& cur_mp = mp;
+
+                    while (cur_mp.get_parent().size())
+                    {
+                        res.parents.push_back(cur_mp.get_parent());
+
+                        bool found = false;
+
+                        for (auto& tmp : mpaths)
+                            if (tmp.get_root() == cur_mp.get_parent_mpath())
+                                {
+                                    cur_mp = tmp;
+                                    found = true;
+                                    break;
+                                }
+
+                        if (!found)
+                            throw runtime_error("Parent modulepath " + cur_mp.get_parent_mpath() + " not indexed");
+                    }
+
+                    output.insert(output.begin() + i, res);
+                    output.resize(min(nres, (int) output.size()));
+                }
+            }
         }
 
     return output;

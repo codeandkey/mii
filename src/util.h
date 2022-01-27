@@ -38,6 +38,15 @@ namespace util {
      */
     bool is_binary(std::string path);
 
+    /**
+     * Computes the Levenshtein distance between two strings using a full matrix.
+     *
+     * @param a First string.
+     * @param b Second string.
+     * @return Distance between <a> and <b>.
+     */
+    int distance(std::string a, std::string b);
+
 } // namespace util
 } // namespace mii
 
