@@ -41,8 +41,4 @@ namespace util {
 } // namespace util
 } // namespace mii
 
-#ifdef MII_DEBUG
 #define mii_debug(x, ...) mii::util::debug(__FILE__ ":%d | " x "\n", __LINE__, ##__VA_ARGS__)
-#else
-#define mii_debug
-#endif

@@ -9,7 +9,7 @@ BUILD      = $(shell date "+%d-%m-%Y")
 VERSION    = $(shell git describe --tag --abbrev=0)
 
 CC         = g++
-CFLAGS     = -std=c++11 -Wall -Werror -Wno-format-security -pedantic -g -DMII_DEBUG -DMII_PREFIX="\"$(REALPREFIX)\"" -DMII_BUILD_TIME="\"$(BUILD)\"" -DMII_VERSION=\"$(VERSION)\"
+CFLAGS     = -std=c++11 -Wall -Werror -Wno-format-security -pedantic -g -DMII_PREFIX="\"$(REALPREFIX)\"" -DMII_BUILD_TIME="\"$(BUILD)\"" -DMII_VERSION=\"$(VERSION)\"
 LDFLAGS    = -llua
 
 C_SOURCES  = $(wildcard src/*.cpp)
