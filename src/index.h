@@ -8,20 +8,14 @@
 #include "moduledir.h"
 
 namespace mii {
-class Index {
-public:
-    /**
-     * Initializes a new, empty index.
-     */
-    Index();
-
+namespace index {
     /**
      * Loads an index from an input stream. The stream must be opened in
      * binary mode.
      *
      * @param inp Input stream to deserialize from.
      */
-    Index(std::istream& inp);
+    void load(std::istream& inp);
 
     /**
      * Imports a module directory into the index. Performs analysis as
@@ -36,18 +30,12 @@ public:
      * Serializes the index to an output stream. The output stream must be
      * opened in binary mode.
      */
-    friend std::ostream& operator<<(std::ostream& lhs, const Index& rhs);
+    void save(std::ostream& dst);
 
     /**
      * Gets the list of active modulepaths.
      */
-    const std::vector<ModuleDir>& get_mpaths() const
-    {
-        return mpaths;
-    }
+    const std::vector<ModuleDir>& get_mpaths();
 
-private:
-    std::vector<ModuleDir> mpaths;
-
-}; // class Index
+} // namespace index
 } // namespace mii

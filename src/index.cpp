@@ -4,9 +4,9 @@
 using namespace mii;
 using namespace std;
 
-Index::Index() {};
+static vector<ModuleDir> mpaths;
 
-Index::Index(istream& inp)
+void index::load(istream& inp)
 {
     if (!(inp.flags() & ios::binary))
         throw runtime_error("Moduledir must be parsed from binary stream");
@@ -27,7 +27,7 @@ Index::Index(istream& inp)
         mpaths.emplace_back(inp);
 }
 
-void Index::import(std::string mpath)
+void index::import(std::string mpath)
 {
     for (auto& mp : mpaths)
         if (mp.get_root() == mpath)
@@ -44,17 +44,18 @@ void Index::import(std::string mpath)
             import(mp);
 }
 
-namespace mii { // needed for overload
-ostream& operator<<(ostream& lhs, const Index& rhs)
+void index::save(ostream& dst)
 {
     // 1. Moduledir count
-    uint32_t mpath_count = rhs.mpaths.size();
-    lhs.write((char*) &mpath_count, sizeof mpath_count);
+    uint32_t mpath_count = mpaths.size();
+    dst.write((char*) &mpath_count, sizeof mpath_count);
 
     // 2. Each moduledir
-    for (auto& md : rhs.mpaths)
-        lhs << md;
-
-    return lhs;
+    for (auto& md : mpaths)
+        dst << md;
 }
-} // namespace mii
+
+const vector<ModuleDir>& index::get_mpaths()
+{
+    return mpaths;
+}

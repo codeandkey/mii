@@ -15,11 +15,9 @@ int main(int argc, char** argv) {
     mii_debug("prefix: %s", options::prefix().c_str());
     mii_debug("version: %s", options::version().c_str());
 
-    Index ind;
-    
-    ind.import("/home/jtst/git/spack/share/spack/lmod/linux-archrolling-x86_64/Core");
+    index::import("/home/jtst/git/spack/share/spack/lmod/linux-archrolling-x86_64/Core");
 
-    for (auto& mp : ind.get_mpaths())
+    for (auto& mp : index::get_mpaths())
     {
         cout << "mpath " << mp.get_root() << endl;
 
