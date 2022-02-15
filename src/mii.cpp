@@ -77,7 +77,7 @@ int main(int argc, char** argv) {
         { NULL,         0,                 NULL,  0 },
     };
 
-    while ((opt = getopt_long(argc, argv, "i:hj", long_options, NULL)) != -1)
+    while ((opt = getopt_long(argc, argv, "+i:hj", long_options, NULL)) != -1)
         switch (opt)
         {
             case 'h':
@@ -162,11 +162,12 @@ int cmd_find(int argc, char** argv)
     // Parse options
     static struct option long_options[] = {
         { "exact",      no_argument, NULL, 'i' },
-        { "parse",      no_argument, NULL, 'h' },
+        { "parse",      no_argument, NULL, 'p' },
+        { "help",      no_argument, NULL, 'h' },
         { NULL,         0,           NULL,  0 },
     };
 
-    while ((opt = getopt_long(argc, argv, "i:hj", long_options, NULL)) != -1)
+    while ((opt = getopt_long(argc, argv, "eph", long_options, NULL)) != -1)
         switch (opt)
         {
             case 'h':
