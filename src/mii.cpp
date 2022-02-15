@@ -250,7 +250,13 @@ int cmd_list(int argc, char** argv)
 int cmd_help(int argc, char** argv)
 {
     cout << "usage: " << argv[0] << " [-h|--help] [-v|--version] [-i INDEX] SUBCOMMAND [OPTIONS]\n";
-    cout << "available subcommands:\n\tbuild\n\tfind\n\thelp\n";
+    cout << "available subcommands:\n"
+        << "\tbuild  \tbuild the module index\n"
+        << "\tfind   \tsearch the index for a command\n"
+        << "\thelp   \tshow this information\n"
+        << "\tlist   \tshow module index tree\n"
+        << "\tselect \tinteractively select a module\n"
+        << "\tversion\tshow version information\n";
     return 0;
 }
 
