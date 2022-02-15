@@ -174,8 +174,8 @@ int cmd_find(int argc, char** argv)
                      << "\tsearches for modules providing COMMAND\n\n";
 
                 cout << "find options:\n"
-                     << "\t-e --exact\tonly search for exact matches\n"
-                     << "\t-p --parse\trender output in parse-friendly format\n";
+                     << "\t-e --exact\tonly show exact matches\n"
+                     << "\t-p --parse\trender output in parser-friendly format\n";
                 return 0;
             case 'e':
                 exact = true;
