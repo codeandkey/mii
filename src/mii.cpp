@@ -39,8 +39,6 @@ void cmd_search(string bin);
 void cmd_list();
 
 int main(int argc, char** argv) {
-    cout << argv[0] << endl;
-
     mii_debug("prefix: %s", options::prefix().c_str());
     mii_debug("version: %s", options::version().c_str());
 
