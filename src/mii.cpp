@@ -81,7 +81,7 @@ int main(int argc, char** argv) {
         switch (opt)
         {
             case 'h':
-                return cmd_help(0, NULL);
+                return cmd_help(argc, argv);
             case 'i':
                 index_path = optarg;
                 break;
@@ -106,7 +106,7 @@ int main(int argc, char** argv) {
         return cleanup(cmd_build(argc - (optind + 1), argv + optind + 1, index_path));
 
     if (argv[optind] == string("help"))
-        return cleanup(cmd_help(argc - (optind + 1), argv + optind + 1));
+        return cleanup(cmd_help(argc, argv));
 
     if (argv[optind] == string("version"))
         return cleanup(cmd_version(argc - (optind + 1), argv + optind + 1));
