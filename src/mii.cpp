@@ -4,6 +4,9 @@
 #include <iostream>
 #include <string>
 
+#include <unistd.h>
+#include <getopt.h>
+
 #include "options.h"
 #include "util.h"
 #include "index.h"
@@ -15,30 +18,47 @@ using namespace std;
 /**
  * Builds a new index and saves it to <dst>.
  * 
- * @param dst Target index file path
+ * @param argc Argument count
+ * @param argv Argument list
+ * @param dst  Selected index path
  */
-void cmd_build(string dst);
+int cmd_build(int argc, char** argv, string dst);
 
 /**
- * Searches the index for modules providing a binary.
- * 
- * @param bin Binary search query.
+ * Searches the index.
+ *
+ * @param argc Argument count
+ * @param argv Argument list
  */
-void cmd_exact(string bin);
+int cmd_find(int argc, char** argv);
 
 /**
- * Searches the index for modules providing similar binaries.
- * 
- * @param bin Binary search query.
+ * Shows help information.
+ *
+ * @param argc Argument count
+ * @param argv Argument list
  */
-void cmd_search(string bin);
+int cmd_help(int argc, char** argv);
+
+/**
+ * Shows version information.
+ *
+ * @param argc Argument count
+ * @param argv Argument list
+ */
+int cmd_version(int argc, char** argv);
 
 /**
  * Writes the mii index to stdout.
+ *
+ * @param argc Argument count
+ * @param argv Argument list
  */
-void cmd_list();
+int cmd_list(int argc, char** argv);
 
 int main(int argc, char** argv) {
+    int opt;
+
     mii_debug("prefix: %s", options::prefix().c_str());
     mii_debug("version: %s", options::version().c_str());
 
@@ -49,53 +69,71 @@ int main(int argc, char** argv) {
     if (index_env && strlen(index_env))
         index_path = index_env;
 
-    if (argc > 1 && string(argv[1]) == "build")
+    // Parse options
+    static struct option long_options[] = {
+        { "index",      required_argument, NULL, 'i' },
+        { "help",       no_argument,       NULL, 'h' },
+        { "version",    no_argument,       NULL, 'v' },
+        { NULL,         0,                 NULL,  0 },
+    };
+
+    while ((opt = getopt_long(argc, argv, "i:hj", long_options, NULL)) != -1)
+        switch (opt)
+        {
+            case 'h':
+                return cmd_help(0, NULL);
+            case 'i':
+                index_path = optarg;
+                break;
+            case 'v':
+                return cmd_version(0, NULL);
+            default:
+                return -1;
+        }
+
+    if (optind >= argc || !argv[optind])
     {
-        cmd_build(index_path);
-        return 0;
+        cerr << "error: expected subcommand\n";
+        return -1;
     }
+
+    auto cleanup = [](int ret) -> int {
+        sandbox::cleanup();
+        return ret;
+    };
+
+    if (argv[optind] == string("build"))
+        return cleanup(cmd_build(argc - (optind + 1), argv + optind + 1, index_path));
+
+    if (argv[optind] == string("help"))
+        return cleanup(cmd_help(argc - (optind + 1), argv + optind + 1));
+
+    if (argv[optind] == string("version"))
+        return cleanup(cmd_version(argc - (optind + 1), argv + optind + 1));
 
     // Load index from disk
     index::load(index_path);
 
-    if (argc > 1 && string(argv[1]) == "exact")
-    {
-        if (argc < 3)
-            throw runtime_error("expected argmuent");
+    if (argv[optind] == string("find"))
+        return cleanup(cmd_find(argc - (optind + 1), argv + optind + 1));
 
-        cmd_exact(argv[2]);
-        return 0;
-    }
-
-    if (argc > 1 && string(argv[1]) == "search")
-    {
-        if (argc < 3)
-            throw runtime_error("expected argmuent");
-
-        cmd_search(argv[2]);
-        return 0;
-    }
-
-    if (argc > 1 && string(argv[1]) == "list")
-    {
-        cmd_list();
-        return 0;
-    }
-
-    // Cleanup
-    sandbox::cleanup();
+    if (argv[optind] == string("list"))
+        return cleanup(cmd_list(argc - (optind + 1), argv + optind + 1));
 
     return 0;
 }
 
-void cmd_build(string dst)
+int cmd_build(int argc, char** argv, string dst)
 {
     cout << "Building index.." << endl;
 
     char* modulepath_env = getenv("MODULEPATH");
 
     if (!modulepath_env || !strlen(modulepath_env))
-        throw runtime_error("MODULEPATH is not set");
+    {
+        cerr << "error: MODULEPATH is not set\n";
+        return -1;
+    }
 
     for (char* cpath = strtok(modulepath_env, ":"); cpath; cpath = strtok(NULL, ":"))
     {
@@ -113,16 +151,63 @@ void cmd_build(string dst)
     index::save(dst);
 
     cout << "done" << endl;
+    return -1;
 }
 
-void cmd_exact(string bin)
+int cmd_find(int argc, char** argv)
 {
-    vector<index::Result> results = index::search_exact(bin);
+    int opt;
+    bool exact = false, parse = false;
+
+    // Parse options
+    static struct option long_options[] = {
+        { "exact",      no_argument, NULL, 'i' },
+        { "parse",      no_argument, NULL, 'h' },
+        { NULL,         0,           NULL,  0 },
+    };
+
+    while ((opt = getopt_long(argc, argv, "i:hj", long_options, NULL)) != -1)
+        switch (opt)
+        {
+            case 'h':
+                cout << "usage: find [-e|--exact] [-p|--parse] COMMAND\n"
+                     << "\tsearches for modules providing COMMAND\n\n";
+
+                cout << "find options:\n"
+                     << "\t-e --exact\tonly search for exact matches\n"
+                     << "\t-p --parse\trender output in parse-friendly format\n";
+                return 0;
+            case 'e':
+                exact = true;
+                break;
+            case 'p':
+                parse = true;
+                break;
+            default:
+                return -1;
+        }
+
+    if (optind >= argc || !argv[optind])
+    {
+        cerr << "find error: expected COMMAND\n";
+        return -1;
+    }
+
+    string bin = argv[optind];
+
+    vector<index::Result> results;
+    
+    if (exact)
+        results = index::search_exact(bin);
+    else
+        results = index::search_fuzzy(bin);
 
     if (!results.size())
     {
-        cout << "No results found for '" << bin << "'" << endl;
-        return;
+        if (!parse)
+            cout << "no results found for '" << bin << "'" << endl;
+
+        return 0;
     }
 
     int code_width = 0;
@@ -137,33 +222,11 @@ void cmd_exact(string bin)
 
         cout << r.code << endl;
     }
+
+    return 0;
 }
 
-void cmd_search(string bin)
-{
-    vector<index::Result> results = index::search_fuzzy(bin);
-
-    if (!results.size())
-    {
-        cout << "No results found for '" << bin << "'" << endl;
-        return;
-    }
-
-    int code_width = 0;
-
-    for (auto& r : results)
-        code_width = max(code_width, (int) r.code.size());
-
-    for (auto& r : results)
-    {
-        for (int i = r.parents.size() - 1; i >= 0; --i)
-            cout << r.parents[i] << ":";
-
-        cout << r.code << endl;
-    }
-}
-
-void cmd_list()
+int cmd_list(int argc, char** argv)
 {
     for (auto& mp : index::get_mpaths())
     {
@@ -180,4 +243,20 @@ void cmd_list()
                 cout << "\t\t[child] " << c << endl;
         }
     }
+
+    return 0;
+}
+
+int cmd_help(int argc, char** argv)
+{
+    cout << "usage: " << argv[0] << " [-h|--help] [-v|--version] [-i INDEX] SUBCOMMAND [OPTIONS]\n";
+    cout << "available subcommands:\n\tbuild\n\tfind\n\thelp\n";
+    return 0;
+}
+
+int cmd_version(int argc, char** argv)
+{
+
+    cout << "mii version " MII_VERSION " build " MII_BUILD_TIME;
+    return 0;
 }
