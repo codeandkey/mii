@@ -167,6 +167,7 @@ int cmd_find(int argc, char** argv)
         { NULL,         0,           NULL,  0 },
     };
 
+    optind = 0; // reset getopt
     while ((opt = getopt_long(argc, argv, "eph", long_options, NULL)) != -1)
         switch (opt)
         {
