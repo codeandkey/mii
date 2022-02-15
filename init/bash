@@ -6,7 +6,7 @@
 
 # find a modules installation
 if ! type module 2>&1 >/dev/null; then
-    echo "[mii] Couldn't find a 'module' command. Disabling!" 1>&2
+    [ -n "$MII_DEBUG" ] && echo "[mii] Couldn't find a 'module' command. Disabling!" 1>&2
     return
 fi
 
@@ -20,7 +20,7 @@ export MII="$THISDIR/../../../bin/mii"
 export PATH=$THISDIR/../../../bin:$PATH
 
 if [ ! -x "$MII" ]; then
-    echo "[mii] Couldn't find the mii binary (tried $MII). Disabling!" 1>&2
+    [ -n "$MII_DEBUG" ] && echo "[mii] Couldn't find the mii binary (tried $MII). Disabling!" 1>&2
     return
 fi
 

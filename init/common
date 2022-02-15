@@ -18,7 +18,7 @@ mods=($($MII select "$1"))
 res=$?
 
 if [ $res = 0 ]; then
-    echo "[mii] loading ${mods[@]} ..." 1>&2
+    echo "Loading ${mods[@]} ..." 1>&2
     module load ${mods[@]}
     "$@"
 elif [ $res = 2 ]; then
