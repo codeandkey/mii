@@ -4,9 +4,6 @@
 #include <iostream>
 #include <string>
 
-#include <unistd.h>
-#include <getopt.h>
-
 #include "options.h"
 #include "util.h"
 #include "index.h"
@@ -18,47 +15,35 @@ using namespace std;
 /**
  * Builds a new index and saves it to <dst>.
  * 
- * @param argc Argument count
- * @param argv Argument list
  * @param dst  Selected index path
  */
-int cmd_build(int argc, char** argv, string dst);
+int cmd_build(string dst);
 
 /**
  * Searches the index.
  *
- * @param argc Argument count
- * @param argv Argument list
+ * @param args Argument list
  */
-int cmd_find(int argc, char** argv);
+int cmd_find(vector<string> args);
 
 /**
  * Shows help information.
  *
- * @param argc Argument count
- * @param argv Argument list
+ * @param arg0 First argument
  */
-int cmd_help(int argc, char** argv);
+int cmd_help(string arg0);
 
 /**
  * Shows version information.
- *
- * @param argc Argument count
- * @param argv Argument list
  */
-int cmd_version(int argc, char** argv);
+int cmd_version();
 
 /**
  * Writes the mii index to stdout.
- *
- * @param argc Argument count
- * @param argv Argument list
  */
-int cmd_list(int argc, char** argv);
+int cmd_list();
 
 int main(int argc, char** argv) {
-    int opt;
-
     mii_debug("prefix: %s", options::prefix().c_str());
     mii_debug("version: %s", options::version().c_str());
 
@@ -70,28 +55,34 @@ int main(int argc, char** argv) {
         index_path = index_env;
 
     // Parse options
-    static struct option long_options[] = {
-        { "index",      required_argument, NULL, 'i' },
-        { "help",       no_argument,       NULL, 'h' },
-        { "version",    no_argument,       NULL, 'v' },
-        { NULL,         0,                 NULL,  0 },
-    };
+    string arg0 = argv[0];
+    vector<string> args;
+    string subcmd;
 
-    while ((opt = getopt_long(argc, argv, "+i:hj", long_options, NULL)) != -1)
-        switch (opt)
+    for (int i = 0; i < argc; ++i)
+        args.push_back(argv[i]);
+
+    args.erase(args.begin());
+
+    while (args.size())
+    {
+        string arg = args.front();
+
+        if (arg.size() && arg[0] != '-')
         {
-            case 'h':
-                return cmd_help(argc, argv);
-            case 'i':
-                index_path = optarg;
-                break;
-            case 'v':
-                return cmd_version(0, NULL);
-            default:
-                return -1;
+            // Grab subcommand
+            subcmd = arg;
+            args.erase(args.begin());
+            break;
         }
 
-    if (optind >= argc || !argv[optind])
+        if (arg == "-h" || arg == "--help")
+            return cmd_help(arg0);
+        else if (arg == "-v" || arg == "--version")
+            return cmd_version();
+    }
+
+    if (subcmd.empty())
     {
         cerr << "error: expected subcommand\n";
         return -1;
@@ -102,28 +93,25 @@ int main(int argc, char** argv) {
         return ret;
     };
 
-    if (argv[optind] == string("build"))
-        return cleanup(cmd_build(argc - (optind + 1), argv + optind + 1, index_path));
-
-    if (argv[optind] == string("help"))
-        return cleanup(cmd_help(argc, argv));
-
-    if (argv[optind] == string("version"))
-        return cleanup(cmd_version(argc - (optind + 1), argv + optind + 1));
+    if (subcmd == "build")
+        return cleanup(cmd_build(index_path));
+    else if (subcmd == "help")
+        return cleanup(cmd_help(arg0));
+    else if (subcmd == "version")
+        return cleanup(cmd_version());
 
     // Load index from disk
     index::load(index_path);
 
-    if (argv[optind] == string("find"))
-        return cleanup(cmd_find(argc - (optind + 1), argv + optind + 1));
-
-    if (argv[optind] == string("list"))
-        return cleanup(cmd_list(argc - (optind + 1), argv + optind + 1));
+    if (subcmd == "find")
+        return cleanup(cmd_find(args));
+    else if (subcmd =="list")
+        return cleanup(cmd_list());
 
     return 0;
 }
 
-int cmd_build(int argc, char** argv, string dst)
+int cmd_build(string dst)
 {
     cout << "Building index.." << endl;
 
@@ -154,48 +142,45 @@ int cmd_build(int argc, char** argv, string dst)
     return -1;
 }
 
-int cmd_find(int argc, char** argv)
+int cmd_find(vector<string> args)
 {
-    int opt;
     bool exact = false, parse = false;
+    string bin;
 
     // Parse options
-    static struct option long_options[] = {
-        { "exact",      no_argument, NULL, 'i' },
-        { "parse",      no_argument, NULL, 'p' },
-        { "help",      no_argument, NULL, 'h' },
-        { NULL,         0,           NULL,  0 },
-    };
-
-    optind = 0; // reset getopt
-    while ((opt = getopt_long(argc, argv, "eph", long_options, NULL)) != -1)
-        switch (opt)
+    for (auto& arg : args) {
+        if (arg.size() && arg[0] != '-')
         {
-            case 'h':
-                cout << "usage: find [-e|--exact] [-p|--parse] COMMAND\n"
-                     << "\tsearches for modules providing COMMAND\n\n";
-
-                cout << "find options:\n"
-                     << "\t-e --exact\tonly show exact matches\n"
-                     << "\t-p --parse\trender output in parser-friendly format\n";
-                return 0;
-            case 'e':
-                exact = true;
-                break;
-            case 'p':
-                parse = true;
-                break;
-            default:
+            if (bin.size())
+            {
+                cerr << "find error: only a single command is allowed\n";
                 return -1;
+            }
+
+            bin = arg;
         }
 
-    if (optind >= argc || !argv[optind])
-    {
-        cerr << "find error: expected COMMAND\n";
-        return -1;
-    }
+        if (arg == "-e" || arg == "--exact")
+            exact = true;
+        else if (arg == "-p" || arg == "--parse")
+            parse = true;
+        else if (arg == "-h" || arg == "--help")
+        {
+            cout << "usage: find [-e|--exact] [-p|--parse] COMMAND\n"
+                    << "\tsearches for modules providing COMMAND\n\n";
 
-    string bin = argv[optind];
+            cout << "find options:\n"
+                    << "\t-e --exact\tonly show exact matches\n"
+                    << "\t-p --parse\trender output in parser-friendly format\n";
+
+            return 0;
+        }
+        else
+        {
+            cerr << "find error: unrecognized option " << arg << "\n";
+            return -1;
+        }
+    }
 
     vector<index::Result> results;
     
@@ -228,7 +213,7 @@ int cmd_find(int argc, char** argv)
     return 0;
 }
 
-int cmd_list(int argc, char** argv)
+int cmd_list()
 {
     for (auto& mp : index::get_mpaths())
     {
@@ -249,9 +234,9 @@ int cmd_list(int argc, char** argv)
     return 0;
 }
 
-int cmd_help(int argc, char** argv)
+int cmd_help(string arg0)
 {
-    cout << "usage: " << argv[0] << " [-h|--help] [-v|--version] [-i INDEX] SUBCOMMAND [OPTIONS]\n";
+    cout << "usage: " << arg0 << " [-h|--help] [-v|--version] [-i INDEX] SUBCOMMAND [OPTIONS]\n";
     cout << "available subcommands:\n"
         << "\tbuild  \tbuild the module index\n"
         << "\tfind   \tsearch the index for a command\n"
@@ -262,7 +247,7 @@ int cmd_help(int argc, char** argv)
     return 0;
 }
 
-int cmd_version(int argc, char** argv)
+int cmd_version()
 {
 
     cout << "mii version " MII_VERSION " build " MII_BUILD_TIME;
