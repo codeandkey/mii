@@ -43,6 +43,7 @@ void sandbox::init()
             lua_pop(state, 1); // pop error message
 
     lua_close(state);
+    state = nullptr;
     throw runtime_error("Failed to execute sandbox file");
 }
 
@@ -50,6 +51,8 @@ void sandbox::cleanup()
 {
     if (state)
         lua_close(state);
+
+    state = nullptr;
 }
 
 void sandbox::analyze(string path, vector<string>& out_paths, vector<string>& out_mpaths)

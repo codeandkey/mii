@@ -249,7 +249,6 @@ int cmd_help(string arg0)
 
 int cmd_version()
 {
-
-    cout << "mii version " MII_VERSION " build " MII_BUILD_TIME;
+    cout << "mii version " MII_VERSION " build " MII_BUILD_TIME << endl;
     return 0;
 }

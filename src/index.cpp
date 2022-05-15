@@ -42,7 +42,12 @@ void index::import(std::string mpath, std::string parent_code, std::string paren
             return;
         }
 
-    mpaths.emplace_back(mpath, parent_code, parent_mpath);
+    try {
+        mpaths.emplace_back(mpath, parent_code, parent_mpath);
+    } catch(exception& e) {
+        cerr << "warning: failed to index " << mpath << ": " << e.what() << endl;
+        return;
+    }
 
     // Continue importing new child modulepaths
     for (auto& m : mpaths.back().get_modules())
