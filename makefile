@@ -18,7 +18,7 @@ C_OUTPUT   = bin/mii
 
 LUA_SOURCES = src/lua/utils.lua src/lua/sandbox.lua
 LUA_OUTPUT  = share/mii/lua/sandbox.luac
-LUAC        = luac
+LUAC        ?= luac
 
 OUTPUTS    = $(C_OUTPUT) $(LUA_OUTPUT)
 
