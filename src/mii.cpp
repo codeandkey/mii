@@ -57,12 +57,13 @@ int main(int argc, char** argv) {
     // Parse options
     string arg0 = argv[0];
     vector<string> args;
+
     string subcmd;
 
     for (int i = 0; i < argc; ++i)
         args.push_back(argv[i]);
 
-    args.erase(args.begin());
+    args.erase(args.begin()); // pop mii command
 
     while (args.size())
     {
@@ -72,7 +73,7 @@ int main(int argc, char** argv) {
         {
             // Grab subcommand
             subcmd = arg;
-            args.erase(args.begin());
+            args.erase(args.begin()); // pop subcommand
             break;
         }
 
@@ -80,12 +81,15 @@ int main(int argc, char** argv) {
             return cmd_help(arg0);
         else if (arg == "-v" || arg == "--version")
             return cmd_version();
+
+        cerr << "error: unrecognized argument " << arg << "\n";
+        return -1;
     }
 
     if (subcmd.empty())
     {
+        subcmd = "help";
         cerr << "error: expected subcommand\n";
-        return -1;
     }
 
     auto cleanup = [](int ret) -> int {
@@ -153,11 +157,12 @@ int cmd_find(vector<string> args)
         {
             if (bin.size())
             {
-                cerr << "find error: only a single command is allowed\n";
+                cerr << "find error: only a single COMMAND is allowed\n";
                 return -1;
             }
 
             bin = arg;
+            continue;
         }
 
         if (arg == "-e" || arg == "--exact")
@@ -166,12 +171,12 @@ int cmd_find(vector<string> args)
             parse = true;
         else if (arg == "-h" || arg == "--help")
         {
-            cout << "usage: find [-e|--exact] [-p|--parse] COMMAND\n"
-                    << "\tsearches for modules providing COMMAND\n\n";
+            cout << "USAGE: find [-e|--exact] [-p|--parse] COMMAND\n"
+                    << "    Searches for modules providing COMMAND\n\n";
 
             cout << "find options:\n"
-                    << "\t-e --exact\tonly show exact matches\n"
-                    << "\t-p --parse\trender output in parser-friendly format\n";
+                    << "    -e --exact\tOnly show exact matches\n"
+                    << "    -p --parse\tPrint output in parser-friendly format\n";
 
             return 0;
         }
@@ -180,6 +185,12 @@ int cmd_find(vector<string> args)
             cerr << "find error: unrecognized option " << arg << "\n";
             return -1;
         }
+    }
+
+    if (!bin.size())
+    {
+        cerr << "find error: a COMMAND is required\n";
+        return -1;
     }
 
     vector<index::Result> results;
@@ -192,7 +203,7 @@ int cmd_find(vector<string> args)
     if (!results.size())
     {
         if (!parse)
-            cout << "no results found for '" << bin << "'" << endl;
+            cout << "No results found for '" << bin << "'" << endl;
 
         return 0;
     }
@@ -217,7 +228,7 @@ int cmd_list()
 {
     for (auto& mp : index::get_mpaths())
     {
-        cout << "mpath " << mp.get_root() << endl;
+        cout << "modulepath " << mp.get_root() << endl;
 
         for (auto& m : mp.get_modules()) 
         {
@@ -236,19 +247,22 @@ int cmd_list()
 
 int cmd_help(string arg0)
 {
-    cout << "usage: " << arg0 << " [-h|--help] [-v|--version] [-i INDEX] SUBCOMMAND [OPTIONS]\n";
-    cout << "available subcommands:\n"
-        << "\tbuild  \tbuild the module index\n"
-        << "\tfind   \tsearch the index for a command\n"
-        << "\thelp   \tshow this information\n"
-        << "\tlist   \tshow module index tree\n"
-        << "\tselect \tinteractively select a module\n"
-        << "\tversion\tshow version information\n";
+    cout << "USAGE: " << arg0 << " [OPTIONS] <SUBCOMMAND>\n";
+    cout << "\nOPTIONS:\n";
+    cout << "    -h, --help            Print this message\n";
+    cout << "    -v, --version         Print version information\n";
+    cout << "    -i, --index <PATH>    Use index at PATH\n";
+    cout << "\nSUBCOMMANDS:\n";
+    cout << "    build             Scan the MODULEPATH and build the index\n";
+    cout << "    find [-ep] CMD    Search modules for command CMD\n";
+    cout << "    help              Print this message\n";
+    cout << "    list              Print a tree of cached modules\n";
+    cout << "    version           Print version information\n";
     return 0;
 }
 
 int cmd_version()
 {
-    cout << "mii version " MII_VERSION " build " MII_BUILD_TIME << endl;
+    cout << "Mii version " MII_VERSION " build " MII_BUILD_TIME << endl;
     return 0;
 }
