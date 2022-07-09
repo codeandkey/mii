@@ -367,7 +367,6 @@ int mii_disable() {
     char* disable_path = mii_join_path(_mii_datadir, "disabled");
     FILE* disable_fd = fopen(disable_path, "wb");
 
-    free(disable_path);
 
     if (!disable_fd) {
         mii_error("Couldn't write disable lock: %s\n", strerror(errno));
@@ -377,6 +376,8 @@ int mii_disable() {
 
     fclose(disable_fd);
     mii_info("Disabled shell integration!");
+
+    free(disable_path);
 
     return 0;
 }
