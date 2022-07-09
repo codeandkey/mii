@@ -14,7 +14,7 @@ if [ "$state" = "disabled" ]; then
 fi
 
 # run mii select on the command, see if it returns OK
-mods=($($MII select "$1"))
+mods=($($MII select -- "$1"))
 res=$?
 
 if [ $res = 0 ]; then
