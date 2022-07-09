@@ -2,7 +2,6 @@
 
 #include "modtable.h"
 #include "util.h"
-#include "log.h"
 #include "analysis.h"
 
 #include "xxhash/xxhash.h"
@@ -40,7 +39,9 @@ int _mii_modtable_gen_recursive_sub(mii_modtable* p, const char* root, const cha
 /* initialize an empty mii_modtable */
 void mii_modtable_init(mii_modtable* out) {
     memset(out, 0, sizeof *out);
-    mii_debug("Initialized empty mii_modtable, hash modulus %d", MII_MODTABLE_HASHTABLE_WIDTH);
+#ifndef NDEBUG 
+    fprintf(stderr, "Initialized empty mii_modtable, size %d\n", MII_MODTABLE_HASHTABLE_WIDTH);
+#endif
 }
 
 /*
@@ -84,12 +85,12 @@ void mii_modtable_free(mii_modtable* p) {
  */
 int mii_modtable_gen(mii_modtable* p, char* modulepath) {
     if (p->num_modules) {
-        mii_error("Table already has modules present. Will not generate over it!\n");
+        fprintf(stderr, "ERROR: refusing to overwrite non-empty table\n");
         return -1;
     }
 
     if (!modulepath || !strlen(modulepath)) {
-        mii_error("Empty or blank MODULEPATH! Will not generate module table.");
+        fprintf(stderr, "ERROR: missing MODULEPATH\n");
         return -1;
     }
 
@@ -100,7 +101,9 @@ int mii_modtable_gen(mii_modtable* p, char* modulepath) {
         _mii_modtable_gen_recursive(p, root);
     }
 
-    mii_debug("Found %d modules", p->num_modules);
+#ifndef NDEBUG
+    fprintf(stderr, "Found %d modules", p->num_modules);
+#endif
 
     /* after gen, every module requires analysis */
     p->modules_requiring_analysis = p->num_modules;
@@ -151,7 +154,9 @@ int mii_modtable_analysis(mii_modtable* p, int* num) {
                 /* need to perform analysis on this module */
 
                 if (!mii_analysis_run(cur->path, cur->type, &cur->bins, &cur->num_bins)) {
-                    mii_debug("analysis for %s : %d bins", cur->path, cur->num_bins);
+#ifndef NDEBUG
+                    printf("analysis for %s : %d bins\n", cur->path, cur->num_bins);
+#endif
 
                     cur->num_parents = 0;
                     cur->analysis_complete = 1;
@@ -178,11 +183,13 @@ int mii_modtable_export(mii_modtable* p, const char* path) {
     FILE* f = fopen(path, "wb");
 
     if (!f) {
-        mii_error("Couldn't open %s for writing: %s\n", path, strerror(errno));
+        fprintf(stderr, "ERROR: couldn't open %s for writing: %s\n", path, strerror(errno));
         return -1;
     }
 
-    mii_debug("Exporting %d modules to %s", p->num_modules, path);
+#ifndef NDEBUG
+    printf("Exporting %d modules to %s\n", p->num_modules, path);
+#endif
 
     /* write magic sequence */
     fwrite(MII_MODTABLE_MAGIC_BYTES, sizeof MII_MODTABLE_MAGIC_BYTES, 1, f);
@@ -251,7 +258,9 @@ int mii_modtable_search_exact(mii_modtable* p, const char* cmd, mii_search_resul
 
     mii_search_result_init(res, cmd);
 
-    mii_debug("Searching for bin \"%s\"..", cmd);
+#ifndef NDEBUG
+    printf("Searching for bin \"%s\"..\n", cmd);
+#endif
 
     /* walk through the table and search for exact matches */
     for (int i = 0; i < MII_MODTABLE_HASHTABLE_WIDTH; ++i) {
@@ -289,7 +298,9 @@ int mii_modtable_search_similar(mii_modtable* p, const char* cmd, mii_search_res
 
     mii_search_result_init(res, cmd);
 
-    mii_debug("Searching for bins similar to \"%s\"..", cmd);
+#ifndef NDEBUG
+    printf("Searching for bins similar to \"%s\"..\n", cmd);
+#endif
 
     /* walk through the table and search for exact matches */
     for (int i = 0; i < MII_MODTABLE_HASHTABLE_WIDTH; ++i) {
@@ -383,7 +394,7 @@ int _mii_modtable_gen_recursive_sub(mii_modtable* p, const char* root, const cha
 
         /* stat the type */
         if (stat(abs_path, &st)) {
-            mii_warn("Couldn't stat %s: %s", abs_path, strerror(errno));
+            perror(abs_path);
             free(abs_path);
             continue;
         }
@@ -402,7 +413,9 @@ int _mii_modtable_gen_recursive_sub(mii_modtable* p, const char* root, const cha
                 mod_type = MII_MODTABLE_MODTYPE_LMOD;
             }
 
-            mii_debug("Found module %s at %s", rel_path, abs_path);
+#ifndef NDEBUG
+            printf("Found module %s at %s\n", rel_path, abs_path);
+#endif
 
             /* insert the new module in */
             mii_modtable_entry* new_module = malloc(sizeof *new_module);
@@ -459,7 +472,7 @@ int _mii_modtable_parse_from(mii_modtable* p, const char* path, int (*handler)(m
     /* TODO: add error checking for unexpected EOF */
 
     if (!f) {
-        mii_error("Couldn't open %s for reading: %s", path, strerror(errno));
+        perror(path);
         return -1;
     }
 
@@ -471,7 +484,7 @@ int _mii_modtable_parse_from(mii_modtable* p, const char* path, int (*handler)(m
     }
 
     if (memcmp(magic_seq, MII_MODTABLE_MAGIC_BYTES, sizeof magic_seq)) {
-        mii_error("Couldn't parse from %s: bad magic sequence", path);
+        fprintf(stderr, "ERROR: couldn't parse from %s: bad magic sequence", path);
         fclose(f);
         return -1;
     }
@@ -586,7 +599,7 @@ int _mii_modtable_parse_from(mii_modtable* p, const char* path, int (*handler)(m
 
     /* Catch all read errors here */
     unexpected_eof:
-    mii_error("Couldn't parse from %s: unexpected EOF or read fail\n", path);
+    fprintf(stderr, "ERROR: %s: unexpected EOF or read fail\n", path);
     return -1;
 }
 
@@ -609,7 +622,9 @@ int _mii_modtable_parse_handler_import(mii_modtable* p, char* path, char* code, 
     p->buf[target_index] = new_entry;
     ++p->num_modules;
 
-    mii_debug("Imported module: path %s, code %s, %d bins", path, code, num_bins);
+#ifndef NDEBUG
+    printf("Imported module: path %s, code %s, %d bins\n", path, code, num_bins);
+#endif
     return 0;
 }
 
@@ -683,7 +698,7 @@ int mii_modtable_spider_gen(mii_modtable* p, const char* path, int* count) {
     FILE* pf = popen(cmd, "r");
 
     if (pf == NULL) {
-        mii_error("Couldn't execute %s: %s", cmd, strerror(errno));
+        perror(cmd);
         free(cmd);
         return -1;
     }
@@ -699,7 +714,7 @@ int mii_modtable_spider_gen(mii_modtable* p, const char* path, int* count) {
         unparsed_json = (char*) realloc(unparsed_json, json_len + len);
 
         if (unparsed_json == NULL) {
-            mii_error("Couldn't allocate memory for JSON: %s", strerror(errno));
+            fprintf(stderr, "ERROR: JSON alloc failed: %s\n", strerror(errno));
             pclose(pf);
             return -1;
         }
@@ -712,7 +727,7 @@ int mii_modtable_spider_gen(mii_modtable* p, const char* path, int* count) {
     unparsed_json[--json_len] = '\0';
 
     if (unparsed_json == NULL) {
-        mii_error("The returned JSON was empty.");
+        fprintf(stderr, "ERROR: returned JSON was empty\n");
         free(unparsed_json);
         return -1;
     }
@@ -722,7 +737,7 @@ int mii_modtable_spider_gen(mii_modtable* p, const char* path, int* count) {
     free(unparsed_json);
 
     if (json == NULL) {
-        mii_error("Couldn't parse JSON : %s", cJSON_GetErrorPtr());
+        fprintf(stderr, "ERROR: JSON parsing failed: %s\n", cJSON_GetErrorPtr());
         return -1;
     }
 
@@ -733,12 +748,14 @@ int mii_modtable_spider_gen(mii_modtable* p, const char* path, int* count) {
             mii_modtable_entry* new_module = malloc(sizeof *new_module);
 
             if(mii_analysis_parse_module_json(modulefile, new_module)) {
-                mii_error("Couldn't parse JSON for module %s", modulefile->string);
+                fprintf(stderr, "ERROR: couldn't parse JSON for module %s\n", modulefile->string);
                 free(new_module);
                 return -1;
             }
 
-            mii_debug("analysis for %s : %d bins", new_module->path, new_module->num_bins);
+#ifndef NDEBUG
+            printf("analysis for %s : %d bins\n", new_module->path, new_module->num_bins);
+#endif
 
             /* add to the modtable */
             int target_index = _mii_modtable_get_target_index(new_module->path);

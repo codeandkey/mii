@@ -1,7 +1,6 @@
 #define _POSIX_C_SOURCE 200809L
 
 #include "mii.h"
-#include "log.h"
 #include "util.h"
 
 #include <ctype.h>
@@ -76,7 +75,7 @@ int main(int argc, char** argv) {
 
     /* check there is a subcommand */
     if (optind >= argc) {
-        mii_error("Please specify a subcommand!");
+        fprintf(stderr, "Please specify a subcommand!\n");
         usage(0, *argv);
         return -1;
     }
@@ -92,7 +91,7 @@ int main(int argc, char** argv) {
     } else if (!strcmp(argv[optind], "exact")) {
         /* check there is a second positional argument */
         if (++optind >= argc) {
-            mii_error("exact: missing argument");
+            fprintf(stderr, "exact: an argument is required\n");
             usage(0, *argv);
             return -1;
         }
@@ -107,7 +106,7 @@ int main(int argc, char** argv) {
     } else if (!strcmp(argv[optind], "search")) {
         /* check there is a second positional argument */
         if (++optind >= argc) {
-            mii_error("search: missing argument");
+            fprintf(stderr, "search: an argument is required\n");
             usage(0, *argv);
             return -1;
         }
@@ -122,7 +121,7 @@ int main(int argc, char** argv) {
     } else if (!strcmp(argv[optind], "show")) {
         /* check there is a second positional argument */
         if (++optind >= argc) {
-            mii_error("show: missing argument");
+            fprintf(stderr, "show: an argument is required\n");
             usage(0, *argv);
             return -1;
         }
@@ -137,7 +136,7 @@ int main(int argc, char** argv) {
     } else if (!strcmp(argv[optind], "select")) {
         /* check there is a second positional argument */
         if (++optind >= argc) {
-            mii_error("select: missing argument");
+            fprintf(stderr, "select: an argument is required\n");
             usage(0, *argv);
             return -1;
         }
@@ -287,7 +286,7 @@ int main(int argc, char** argv) {
     } else if (!strcmp(argv[optind], "version")) {
         version();
     } else {
-        mii_error("Unrecognized subcommand \"%s\"!", argv[optind]);
+        fprintf(stderr, "Unrecognized subcommand \"%s\"!\n", argv[optind]);
     }
 
     /* cleanup */
@@ -312,7 +311,7 @@ int install() {
     char* env_mii = getenv("MII");
     
     if (env_mii) {
-        mii_info("Mii is already enabled on your shell!");
+        printf("Mii is already enabled on your shell!\n");
         return 0;
     }
 
@@ -320,20 +319,20 @@ int install() {
     const char* shellrc_suffix = NULL;
 
     if (!env_shell || !strlen(env_shell)) {
-        mii_error("$SHELL is not set, cannot detect your shell!");
+        fprintf(stderr, "$SHELL is not set, cannot detect your shell!\n");
         return -1;
     }
 
     env_shell = basename(env_shell);
 
     if (!strcmp(env_shell, "bash")) {
-        mii_info("Detected bash shell");
+        printf("Detected bash\n");
         shellrc_suffix = ".bashrc";
     } else if (!strcmp(env_shell, "zsh")) {
-        mii_info("Detected zsh shell");
+        printf("Detected zsh\n");
         shellrc_suffix = ".zshrc";
     } else {
-        mii_error("Unsupported shell %s! Supported shells are 'bash', 'zsh'", env_shell);
+        fprintf(stderr, "Unsupported shell %s! Supported shells are 'bash', 'zsh'\n", env_shell);
         return -1;
     }
 
@@ -353,7 +352,7 @@ int install() {
         FILE* f = fopen(shellrc, "a");
 
         if (!f) {
-            mii_error("Couldn't open shell config %s for writing: %s", shellrc, strerror(errno));
+            fprintf(stderr, "ERROR: couldn't open %s for writing: fopen: %s\n", shellrc, strerror(errno));
             return -1;
         }
 

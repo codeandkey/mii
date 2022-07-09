@@ -2,7 +2,6 @@
 
 #include "mii.h"
 #include "util.h"
-#include "log.h"
 #include "analysis.h"
 
 #include <errno.h>
@@ -35,7 +34,9 @@ int mii_init() {
         if (env_modulepath) {
             _mii_modulepath = mii_strdup(env_modulepath);
         } else {
-            mii_error("MODULEPATH is not set!");
+#ifndef NDEBUG
+            fprintf(stderr, "warning: MODULEPATH is not set!");
+#endif
             return -1;
         }
     }
@@ -57,7 +58,6 @@ int mii_init() {
 
             /* couldn't create index dir */
             if (res) {
-                mii_error("Error initializing index directory: %s", strerror(errno));
                 return -1;
             }
 
@@ -67,7 +67,7 @@ int mii_init() {
         char* home = getenv("HOME");
 
         if (!home) {
-            mii_error("Cannot compute default data dir: HOME variable is not set!");
+            fprintf(stderr, "ERROR: can't compute data dir without $HOME set\n");
             return -1;
         }
 
@@ -77,7 +77,7 @@ int mii_init() {
     int res = mkdir(_mii_datadir, 0755);
 
     if (res && (errno != EEXIST)) {
-        mii_error("Error initializing data directory: %s", strerror(errno));
+        fprintf(stderr, "ERROR: datadir init failed: mkdir: %s\n", strerror(errno));
         return -1;
     }
 
@@ -86,7 +86,9 @@ int mii_init() {
         _mii_datafile = mii_join_path(_mii_datadir, "index");
     }
 
-    mii_debug("Initialized mii with cache path %s", _mii_datafile);
+    #ifndef NDEBUG
+    fprintf(stderr, "Initialized mii with cache path %s", _mii_datafile);
+    #endif
     return 0;
 }
 
@@ -108,39 +110,39 @@ int mii_build() {
 
 #if MII_ENABLE_SPIDER
     if (mii_modtable_spider_gen(&index, _mii_modulepath, &count)) {
-        mii_error("Unexpected failure generating the index with spider!");
+        fprintf(stderr, "ERROR: spider generation failed\n");
         return -1;
     }
 #else
     /* initialize analysis regular expressions */
     if (mii_analysis_init()) {
-        mii_error("Unexpected failure initializing analysis functions!");
+        fprintf(stderr, "ERROR: analysis init failed\n");
         return -1;
     }
 
     /* generate a partial index from the disk */
     if (mii_modtable_gen(&index, _mii_modulepath)) {
-        mii_error("Error occurred during index generation, terminating!");
+        fprintf(stderr, "ERROR: index generation failed\n");
         return -1;
     }
 
     /* perform analysis over the entire index */
     if (mii_modtable_analysis(&index, &count)) {
-        mii_error("Error occurred during index analysis, terminating!");
+        fprintf(stderr, "ERROR: index analysis failed\n");
         return -1;
     }
 
 #endif
 
     if (count) {
-        mii_info("Finished analysis on %d modules", count);
+        fprintf(stderr, "Finished analysis on %d modules\n", count);
     } else {
-        mii_warn("Didn't analyze any modules. Is the MODULEPATH correct?");
+        fprintf(stderr, "Didn't analyze any modules. Is the MODULEPATH correct?\n");
     }
 
     /* export back to the disk */
     if (mii_modtable_export(&index, _mii_datafile)) {
-        mii_error("Error occurred during index write, terminating!");
+        fprintf(stderr, "ERROR: index write failed\n");
         return -1;
     }
 
@@ -164,40 +166,40 @@ int mii_sync() {
 
     /* initialize analysis regular expressions */
     if (mii_analysis_init()) {
-        mii_error("Unexpected failure initializing analysis functions!");
+        fprintf(stderr, "ERROR: unexpected analysis failure\n");
         return -1;
     }
 
     /* generate a partial index from the disk */
     if (mii_modtable_gen(&index, _mii_modulepath)) {
-        mii_error("Error occurred during index generation, terminating!");
+        fprintf(stderr, "ERROR: index generation failed\n");
         return -1;
     }
 
     /* try and import up-to-date modules from the cache */
     if (mii_modtable_preanalysis(&index, _mii_datafile)) {
-        mii_warn("Error occurred during index preanalysis, will rebuild the whole cache!");
+        fprintf(stderr, "WARNING: index preanalysis failed, rebuilding the index..\n");
     }
 
     /* perform analysis over any remaining modules */
     int count;
 
     if (mii_modtable_analysis(&index, &count)) {
-        mii_error("Error occurred during index analysis, terminating!");
+        fprintf(stderr, "ERROR: index analysis failed\n");
         return -1;
     }
 
 
     /* export back to the disk only if modules were analyzed */
     if (count) {
-        mii_info("Finished analysis on %d modules", count);
+        printf("Finished analysis on %d modules\n", count);
 
         if (mii_modtable_export(&index, _mii_datafile)) {
-            mii_error("Error occurred during index write, terminating!");
+            fprintf(stderr, "ERROR: index write failed\n");
             return -1;
         }
     } else {
-        mii_info("All modules up to date :)");
+        printf("All modules up to date :)\n");
     }
 
     /* cleanup */
@@ -213,21 +215,21 @@ int mii_search_exact(mii_search_result* res, const char* cmd) {
 
     /* try and import the cache from the disk */
     if (mii_modtable_import(&index, _mii_datafile)) {
-        mii_warn("Couldn't import module index, will try and build one now.");
+        fprintf(stderr, "Index import failed, rebuilding..\n");
 
         if (mii_build()) return -1;
 
-        mii_info("Trying to import new index..");
+        fprintf(stderr, "Trying to import new index..\n");
 
         if (mii_modtable_import(&index, _mii_datafile)) {
-            mii_error("Failed to import again, giving up..");
+            fprintf(stderr, "ERROR: failed to import again, giving up..\n");
             return -1;
         }
     }
 
     /* perform the search */
     if (mii_modtable_search_exact(&index, cmd, res)) {
-        mii_error("Error occurred during search, terminating!");
+        fprintf(stderr, "ERROR: search failed\n");
         return -1;
     }
 
@@ -243,21 +245,21 @@ int mii_search_fuzzy(mii_search_result* res, const char* cmd) {
 
     /* try and import the cache from the disk */
     if (mii_modtable_import(&index, _mii_datafile)) {
-        mii_warn("Couldn't import module index, will try and build one now.");
+        fprintf(stderr, "Index import failed, rebuilding..\n");
 
         if (mii_build()) return -1;
 
-        mii_info("Trying to import new index..");
+        fprintf(stderr, "Trying to import new index..\n");
 
         if (mii_modtable_import(&index, _mii_datafile)) {
-            mii_error("Failed to import again, giving up..");
+            fprintf(stderr, "ERROR: failed to import again, giving up..\n");
             return -1;
         }
     }
 
     /* perform the search */
     if (mii_modtable_search_similar(&index, cmd, res)) {
-        mii_error("Error occurred during search, terminating!");
+        fprintf(stderr, "ERROR: search failed\n");
         return -1;
     }
 
@@ -273,21 +275,21 @@ int mii_search_info(mii_search_result* res, const char* cmd) {
 
     /* try and import the cache from the disk */
     if (mii_modtable_import(&index, _mii_datafile)) {
-        mii_warn("Couldn't import module index, will try and build one now.");
+        fprintf(stderr, "Index import failed, rebuilding..\n");
 
         if (mii_build()) return -1;
 
-        mii_info("Trying to import new index..");
+        fprintf(stderr, "Trying to import new index..\n");
 
         if (mii_modtable_import(&index, _mii_datafile)) {
-            mii_error("Failed to import again, giving up..");
+            fprintf(stderr, "ERROR: failed to import again, giving up..\n");
             return -1;
         }
     }
 
     /* perform the search */
     if (mii_modtable_search_info(&index, cmd, res)) {
-        mii_error("Error occurred during search, terminating!");
+        fprintf(stderr, "ERROR: search failed\n");
         return -1;
     }
 
@@ -303,14 +305,14 @@ int mii_list() {
 
     /* try and import the cache from the disk */
     if (mii_modtable_import(&index, _mii_datafile)) {
-        mii_warn("Couldn't import module index, will try and build one now.");
+        fprintf(stderr, "Index import failed, rebuilding..\n");
 
         if (mii_build()) return -1;
 
-        mii_info("Trying to import new index..");
+        fprintf(stderr, "Trying to import new index..\n");
 
         if (mii_modtable_import(&index, _mii_datafile)) {
-            mii_error("Failed to import again, giving up..");
+            fprintf(stderr, "ERROR: failed to import again, giving up..\n");
             return -1;
         }
     }
@@ -353,9 +355,9 @@ int mii_enable() {
     char* disable_path = mii_join_path(_mii_datadir, "disabled");
 
     if (remove(disable_path)) {
-        mii_error("Couldn't enable mii, perhaps it is already enabled? (%s)", strerror(errno));
+        fprintf(stderr, "Couldn't enable mii, perhaps it is already enabled? (%s)\n", strerror(errno));
     } else {
-        mii_info("Re-enabled shell integration!");
+        fprintf(stderr, "Re-enabled shell integration!\n");
     }
 
     free(disable_path);
@@ -369,13 +371,13 @@ int mii_disable() {
 
 
     if (!disable_fd) {
-        mii_error("Couldn't write disable lock: %s\n", strerror(errno));
+        fprintf(stderr, "ERROR: couldn't write disable lock: %s\n", strerror(errno));
         free(disable_path);
         return -1;
     }
 
     fclose(disable_fd);
-    mii_info("Disabled shell integration!");
+    fprintf(stderr, "Disabled shell integration!\n");
 
     free(disable_path);
 

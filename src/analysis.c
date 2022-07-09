@@ -3,7 +3,6 @@
 #include "analysis.h"
 #include "modtable.h"
 #include "util.h"
-#include "log.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -69,7 +68,7 @@ int _mii_analysis_parents_from_json(const cJSON* json, char*** parents_out, int*
  */
 int mii_analysis_init() {
     if (regcomp(&_mii_analysis_lmod_regex, _mii_analysis_lmod_regex_src, REG_EXTENDED | REG_NEWLINE)) {
-        mii_error("failed to compile Lmod analysis regex");
+        fprintf(stderr, "ERROR: LMOD regex failure\n");
         return -1;
     }
 
@@ -102,7 +101,7 @@ int mii_analysis_init() {
             return 0;
     }
 
-    mii_error("failed to load Lua file");
+    fprintf(stderr, "failed to load Lua file");
     lua_close(lua_state);
 
     return -1;
@@ -146,7 +145,7 @@ int _mii_analysis_lua_run(lua_State* lua_state, const char* code, char*** paths_
     res = lua_pcall(lua_state, 1, 1, 0);
 
     if(res != LUA_OK) {
-        mii_error("Error occurred in Lua sandbox : %s", lua_tostring(lua_state, -1));
+        fprintf(stderr, "ERROR: Lua: %s", lua_tostring(lua_state, -1));
         lua_pop(lua_state, 1);
         return -1;
     }
@@ -177,7 +176,7 @@ int _mii_analysis_lmod(const char* path, char*** bins_out, int* num_bins_out) {
     FILE* f = fopen(path, "r");
 
     if (!f) {
-        mii_error("Couldn't open %s for reading : %s", path, strerror(errno));
+        perror(path);
         return -1;
     }
 
@@ -215,7 +214,7 @@ int _mii_analysis_lmod(const char* path, char*** bins_out, int* num_bins_out) {
         char** bin_paths;
         int num_paths;
         if(_mii_analysis_lua_run(lua_state, buffer, &bin_paths, &num_paths)) {
-            mii_error("Error occurred when executing %s, skipping", path);
+            fprintf(stderr, "ERROR: couldn't execute %s", path);
             free(buffer);
             return -1;
         }
@@ -244,7 +243,7 @@ int _mii_analysis_tcl(const char* path, char*** bins_out, int* num_bins_out) {
     FILE* f = fopen(path, "r");
 
     if (!f) {
-        mii_error("Couldn't open %s for reading : %s", path, strerror(errno));
+        perror(path);
         return -1;
     }
 
@@ -294,11 +293,9 @@ int _mii_analysis_scan_path(char* path, char*** bins_out, int* num_bins_out) {
     struct stat st;
 
     for (const char* cur_path = strtok(path, ":"); cur_path; cur_path = strtok(NULL, ":")) {
-        mii_debug("scanning PATH %s", cur_path);
-
         /* TODO: this could be faster, do some benchmarking to see if it's actually slow */
+
         if (!(d = opendir(cur_path))) {
-            mii_debug("Failed to open %s, ignoring : %s", cur_path, strerror(errno));
             continue;
         }
 
@@ -316,7 +313,7 @@ int _mii_analysis_scan_path(char* path, char*** bins_out, int* num_bins_out) {
                     (*bins_out)[*num_bins_out - 1] = mii_strdup(dp->d_name);
                 }
             } else {
-                mii_warn("Couldn't stat %s : %s", abs_path, strerror(errno));
+                perror(abs_path);
             }
 
             free(abs_path);
@@ -333,7 +330,7 @@ char* _mii_analysis_expand(const char* expr) {
 
     if (wordexp(expr, &w, WRDE_NOCMD)) {
         /* expansion failed. die quietly */
-        mii_debug("Expansion failed on string \"%s\"!", expr);
+        perror("wordexp");
         return NULL;
     }
 
@@ -358,21 +355,21 @@ int mii_analysis_parse_module_json(const cJSON* mod_json, mii_modtable_entry* mo
     /* stat the type */
     struct stat st;
     if (stat(mod_json->string, &st) != 0) {
-        mii_error("Couldn't stat %s: %s", mod_json->string, strerror(errno));
+        perror(mod_json->string);
         return -1;
     }
 
     /* get the code */
     cJSON* code = cJSON_GetObjectItemCaseSensitive(mod_json, "fullName");
     if (code == NULL) {
-        mii_error("Couldn't find the code in the JSON!");
+        fprintf(stderr, "ERROR: couldn't find the code in the JSON!\n");
         return -1;
     }
 
     /* get the parents */
     cJSON* parents_arrs = cJSON_GetObjectItemCaseSensitive(mod_json, "parentAA");
     if(_mii_analysis_parents_from_json(parents_arrs, &mod->parents, &mod->num_parents)) {
-        mii_error("Couldn't get parents from JSON!");
+        fprintf(stderr, "ERROR: couldn't get parents from the JSON!\n");
         return -1;
     }
 
@@ -411,7 +408,7 @@ int _mii_analysis_parents_from_json(const cJSON* json, char*** parents_out, int*
     *parents_out = malloc(*num_parents_out * sizeof(char*));
 
     if (*parents_out == NULL) {
-        mii_error("Couldn't allocate memory for parents: %s", strerror(errno));
+        perror("malloc");
         return -1;
     }
 
@@ -426,7 +423,7 @@ int _mii_analysis_parents_from_json(const cJSON* json, char*** parents_out, int*
             codes_tmp = (char*) realloc(codes_tmp, codes_size + parent_len + 1);
 
             if (codes_tmp == NULL) {
-                mii_error("Couldn't allocate memory for parents: %s", strerror(errno));
+                perror("malloc");
                 free(*parents_out);
                 return -1;
             }
