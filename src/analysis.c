@@ -49,6 +49,15 @@ static lua_State *lua_state;
 int _mii_analysis_lua_run(lua_State* lua_state, const char* code, char*** paths_out, int* num_paths_out);
 #endif
 
+static char** ignore_paths = NULL;
+static int num_ignore_paths = 0;
+static char** ignore_mods = NULL;
+static int num_ignore_mods = 0;
+
+/* module filter function */
+int _mii_analysis_is_mod_ignored(const char* path, const char* mod);
+int _mii_analysis_filter_init(const char* filter, const char* sep, char*** out, int* num_out);
+
 /* word expansion functions */
 char* _mii_analysis_expand(const char* expr);
 
@@ -354,14 +363,7 @@ char* _mii_analysis_expand(const char* expr) {
 #if MII_ENABLE_SPIDER
 
 /* parse the json and fill module info */
-int mii_analysis_parse_module_json(const cJSON* mod_json, mii_modtable_entry* mod) {
-    /* stat the type */
-    struct stat st;
-    if (stat(mod_json->string, &st) != 0) {
-        mii_error("Couldn't stat %s: %s", mod_json->string, strerror(errno));
-        return -1;
-    }
-
+int mii_analysis_parse_module_json(const cJSON* mod_json, mii_modtable_entry** mod) {
     /* get the code */
     cJSON* code = cJSON_GetObjectItemCaseSensitive(mod_json, "fullName");
     if (code == NULL) {
@@ -369,28 +371,43 @@ int mii_analysis_parse_module_json(const cJSON* mod_json, mii_modtable_entry* mo
         return -1;
     }
 
+    /* should we filter out the module? */
+    if (_mii_analysis_is_mod_ignored(mod_json->string, code->valuestring)) {
+        mii_debug("Filtered out module %s", code->valuestring);
+        return 0;
+    }
+
+    /* stat the type */
+    struct stat st;
+    if (stat(mod_json->string, &st) != 0) {
+        mii_error("Couldn't stat %s: %s", mod_json->string, strerror(errno));
+        return -1;
+    }
+
+    *mod = malloc(sizeof **mod);
+
     /* get the parents */
     cJSON* parents_arrs = cJSON_GetObjectItemCaseSensitive(mod_json, "parentAA");
-    if(_mii_analysis_parents_from_json(parents_arrs, &mod->parents, &mod->num_parents)) {
+    if(_mii_analysis_parents_from_json(parents_arrs, &(*mod)->parents, &(*mod)->num_parents)) {
         mii_error("Couldn't get parents from JSON!");
         return -1;
     }
 
     /* fill up some of the info */
-    mod->bins = NULL;
-    mod->num_bins = 0;
-    mod->path = mii_strdup(mod_json->string);
-    mod->type = MII_MODTABLE_MODTYPE_LMOD;
-    mod->timestamp = st.st_mtime;
-    mod->code = mii_strdup(code->valuestring);
-    mod->analysis_complete = 1;
+    (*mod)->bins = NULL;
+    (*mod)->num_bins = 0;
+    (*mod)->path = mii_strdup(mod_json->string);
+    (*mod)->type = MII_MODTABLE_MODTYPE_LMOD;
+    (*mod)->timestamp = st.st_mtime;
+    (*mod)->code = mii_strdup(code->valuestring);
+    (*mod)->analysis_complete = 1;
 
     /* get the bins */
     cJSON* bin_paths = cJSON_GetObjectItemCaseSensitive(mod_json, "pathA");
     if (bin_paths != NULL) {
         for (cJSON* path = bin_paths->child; path != NULL; path = path->next) {
             /* analyze the bin paths */
-            _mii_analysis_scan_path(path->string, &mod->bins, &mod->num_bins);
+            _mii_analysis_scan_path(path->string, &(*mod)->bins, &(*mod)->num_bins);
         }
     }
 
@@ -442,5 +459,76 @@ int _mii_analysis_parents_from_json(const cJSON* json, char*** parents_out, int*
 
     return 0;
 }
-
 #endif
+
+int mii_analysis_filters_init(const char* paths, const char* modules) {
+    /* init path filter */
+    int res = _mii_analysis_filter_init(paths, MII_ANALYSIS_PATH_SEP, &ignore_paths, &num_ignore_paths);
+
+    if (res) return res;
+
+    /* init module filter */
+    return _mii_analysis_filter_init(modules, MII_ANALYSIS_MOD_SEP, &ignore_mods, &num_ignore_mods);
+}
+
+int _mii_analysis_filter_init(const char* filter, const char* sep, char*** out, int* num_out) {
+    /* initialize any filter type */
+
+    /* if NULL, nothing to do */
+    if (filter == NULL) {
+        *out = NULL;
+        *num_out = 0;
+        return 0;
+    }
+
+    char* filter_copy = strdup(filter);
+
+    for (char* tok = strtok(filter_copy, sep); tok; tok = strtok(NULL, sep), ++(*num_out)) {
+        *out = (char**) realloc(*out, sizeof(char*) * (*num_out + 1));
+
+        if (*out == NULL) {
+            mii_error("Couldn't allocate memory for filter: %s", strerror(errno));
+            free(filter_copy);
+            return -1;
+        }
+
+        (*out)[*num_out] = strdup(tok);
+    }
+    free(filter_copy);
+
+    return 0;
+}
+
+int mii_analysis_filters_free() {
+    for (int i = 0; i < num_ignore_paths; ++i) {
+        free(ignore_paths[i]);
+    }
+    for (int i = 0; i < num_ignore_mods; ++i) {
+        free(ignore_mods[i]);
+    }
+
+    if (ignore_paths) free(ignore_paths);
+    if (ignore_mods) free(ignore_mods);
+
+    return 0;
+}
+
+int _mii_analysis_is_mod_ignored(const char* path, const char* mod) {
+    /* returns a truthy value if the module should be ignored based on the filters */
+
+    /* check if the path is ignored */
+    for (size_t i = 0; i < num_ignore_paths; ++i) {
+        if (strstr(path, ignore_paths[i]) == path) {
+            return 1;
+        }
+    }
+
+    /* check if the module is ignored */
+    for (size_t i = 0; i < num_ignore_mods; ++i) {
+        if (strstr(mod, ignore_mods[i]) == mod) {
+            return 1;
+        }
+    }
+
+    return 0;
+}

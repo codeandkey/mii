@@ -21,8 +21,10 @@ static const char* USAGE_STRING =
     "    -h, --help       Show this message\n"
     "    -v, --version    Show Mii build version\n"
     "\nOPTIONS:\n"
-    "    -d, --datadir <datadir>    Use <datadir> to store index data\n"
-    "    -m, --modulepath <path>    Use <path> instead of $MODULEPATH\n"
+    "    -d, --datadir <datadir>        Use <datadir> to store index data\n"
+    "    -m, --modulepath <path>        Use <path> instead of $MODULEPATH\n"
+    "    -p, --ignore-paths <path>      Ignore <path> when searching for modules, works with spider mode only\n"
+    "    -n, --ignore-modules <names>   Ignore <names> (comma-separated) when searching for modules, works with spider mode only\n"
     "\nSUBCOMMANDS:\n"
     "    build               Regenerate the module index\n"
     "    sync                Update the module index\n"
@@ -38,12 +40,14 @@ static const char* USAGE_STRING =
     "    help                Show this message\n";
 
 static struct option long_options[] = {
-    { "datadir",    required_argument, NULL, 'd' },
-    { "modulepath", required_argument, NULL, 'm' },
-    { "help",       no_argument,       NULL, 'h' },
-    { "json",       no_argument,       NULL, 'j' },
-    { "version",    no_argument,       NULL, 'v' },
-    { NULL,         0,                 NULL,  0 },
+    { "datadir",        required_argument, NULL, 'd' },
+    { "modulepath",     required_argument, NULL, 'm' },
+    { "ignore-paths",   required_argument, NULL, 'p' },
+    { "ignore-modules", required_argument, NULL, 'n' },
+    { "help",           no_argument,       NULL, 'h' },
+    { "json",           no_argument,       NULL, 'j' },
+    { "version",        no_argument,       NULL, 'v' },
+    { NULL,             0,                 NULL,  0 },
 };
 
 static void usage(int header, char* a0);
@@ -54,13 +58,19 @@ int main(int argc, char** argv) {
     int opt;
     int search_result_flags = 0;
 
-    while ((opt = getopt_long(argc, argv, "d:m:hjv", long_options, NULL)) != -1) {
+    while ((opt = getopt_long(argc, argv, "d:m:p:n:hjv", long_options, NULL)) != -1) {
         switch (opt) {
         case 'd': /* set datadir */
             mii_option_datadir(optarg);
             break;
         case 'm': /* set modulepath */
             mii_option_modulepath(optarg);
+            break;
+        case 'p': /* set paths to ignore */
+            mii_option_ignore_paths(optarg);
+            break;
+        case 'n': /* set modules to ignore */
+            mii_option_ignore_modules(optarg);
             break;
         case 'j':
             search_result_flags |= MII_SEARCH_RESULT_JSON;

@@ -14,8 +14,10 @@
 #include <unistd.h>
 
 /* options */
-static char* _mii_modulepath = NULL;
-static char* _mii_datadir    = NULL;
+static char* _mii_modulepath     = NULL;
+static char* _mii_datadir        = NULL;
+static char* _mii_ignore_paths   = NULL;
+static char* _mii_ignore_modules = NULL;
 
 /* state */
 static char* _mii_datafile = NULL;
@@ -26,6 +28,14 @@ void mii_option_modulepath(const char* modulepath) {
 
 void mii_option_datadir(const char* datadir) {
     if (datadir) _mii_datadir = mii_strdup(datadir);
+}
+
+void mii_option_ignore_paths(const char* paths) {
+    if (paths) _mii_ignore_paths = mii_strdup(paths);
+}
+
+void mii_option_ignore_modules(const char* modules) {
+    if (modules) _mii_ignore_modules = mii_strdup(modules);
 }
 
 int mii_init() {
@@ -91,9 +101,11 @@ int mii_init() {
 }
 
 void mii_free() {
-    if (_mii_modulepath) free(_mii_modulepath);
-    if (_mii_datadir) free(_mii_datadir);
-    if (_mii_datafile) free(_mii_datafile);
+    if (_mii_modulepath)   free(_mii_modulepath);
+    if (_mii_datadir)      free(_mii_datadir);
+    if (_mii_datafile)     free(_mii_datafile);
+    if (_mii_ignore_paths)   free(_mii_ignore_paths);
+    if (_mii_ignore_modules) free(_mii_ignore_modules);
 }
 
 int mii_build() {
@@ -107,7 +119,7 @@ int mii_build() {
     int count;
 
 #if MII_ENABLE_SPIDER
-    if (mii_modtable_spider_gen(&index, _mii_modulepath, &count)) {
+    if (mii_modtable_spider_gen(&index, _mii_modulepath, &count, _mii_ignore_paths, _mii_ignore_modules)) {
         mii_error("Unexpected failure generating the index with spider!");
         return -1;
     }
